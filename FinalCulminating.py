@@ -1,5 +1,12 @@
 from pygame import *
 
+class bullet:
+    def __init__(movementSpeed, angle):
+        self.movementSpeed = movementSpeed
+        self.angle = angle
+
+shoot = bullet(6, 60)
+print(shoot.move)
 up = "w"
 down = "s"
 right = ""
@@ -13,4 +20,3 @@ while running:
             running = False
         if event.type == KEYDOWN:
             draw.circle()
-#aspimaidnoaoinsdiosda
