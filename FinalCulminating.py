@@ -1,94 +1,105 @@
 import pygame
 from pygame import *
 from pygame.locals import *
-from math import *
 import random
-# hello
+from math import *
+
+
+bulletRadius = 5
+enemyRadius = 10
+
 class bullet:
-    def __init__(self, speed, coordinates, direction, existance, visual):
-        self.speed = speed
-        self.coordinates = coordinates
+    def __init__(self, position, direction, speed, existance):
+        self.position = position
         self.direction = direction
+        self.speed = speed
         self.existance = existance
-        self.visual = visual
+        self.rect = pygame.Rect(self.position[0], self.position[1], bulletRadius*2, bulletRadius*2)
+
+    def update(self):
+        self.position[0] += self.direction[0] * self.speed
+        self.position[1] += self.direction[1] * self.speed
+        self.rect.topleft = (self.position[0], self.position[1])
+    
+    def draw(self, screen):
+        pygame.draw.circle(screen, (255, 255, 255), (int(self.position[0]), int(self.position[1])), bulletRadius)
 
 class enemy:
-    def __init__(self, existance, coordinates, visual):
+    def __init__(self, position, existance):
+        self.position = position
         self.existance = existance
-        self.coordinates = coordinates
-        self.visual = visual
+        self.rect = pygame.Rect(self.position[0] - enemyRadius, self.position[1] - enemyRadius, enemyRadius*2, enemyRadius*2)
+
+    def draw(self, surface):
+        pygame.draw.circle(surface, (255, 0, 0), self.position, enemyRadius)
 
 pygame.init()
-screen = pygame.display.set_mode((800,800))
-color = [(255,0,0),(0,255,0)]
-pygame.display.set_caption('im pygaming it')
-clock = pygame.time.Clock()
-running = True
-
-shot = False
-
-playerX = 300
-playerY = 300
-speed = 5
-defaultBulletSpeed = 10
+playerPosition = [300, 300]
 bulletCooldownLength = 1
 bulletCooldown = 0
+playerSpeed = 5
+defaultBulletSpeed = 10
+clock = pygame.time.Clock()
+mainscreen = pygame.display.set_mode((800,800))
+existingBullets = [bullet(playerPosition, [0, 0], defaultBulletSpeed, False)]
+existingEnemies = [enemy((400, 400), True)]
+running = True
 
-bulletProperties = bullet(defaultBulletSpeed, 0, [playerX, playerY], False, pygame.draw.circle(screen, (255, 255, 255), (playerX, playerY), 5))
-existingBullets = [bulletProperties]
-
-enemyProperties = enemy(True, (400, 400), pygame.draw.circle(screen, (255, 0, 0), (400, 400), 10))
-existingEnemies = [enemyProperties]
+#Assets
+characterAsset = pygame.image.load("playersprite1.png")
+characterRect = characterAsset.get_rect(center=(400, 400))
 
 while running:
-    screen.fill((0, 0, 0)) 
+    clock.tick(60)
+    mainscreen.fill((0, 0, 0))
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+    
     keys = pygame.key.get_pressed()
 
-    if keys[K_d]:
-        playerX += speed
     if keys[K_a]:
-        playerX -= speed
-    if keys[K_w]:
-        playerY -= speed
-    if keys[K_s]:
-        playerY += speed
-    if keys[K_SPACE] and bulletCooldown <= 0:
-    
-        mouseX, mouseY = pygame.mouse.get_pos()
-        dx, dy = mouseX - playerX, mouseY - playerY
-        distance = hypot(dx, dy)
+        playerPosition[0] += playerSpeed
+    if keys[K_a]:
+        playerPosition[0] -= playerSpeed
+    if keys[K_a]:
+        playerPosition[1] -= playerSpeed
+    if keys[K_a]:
+        playerPosition[1] += playerSpeed
 
+    if keys[K_SPACE] and bulletCooldown <= 0:
+        mouseX, mouseY = pygame.mouse.get_pos()
+        dx, dy = mouseX - playerPosition[0], mouseY - playerPosition[1]
+        distance = hypot(dx, dy)
+        
         if distance != 0:
-            
-            print(existingBullets)
-            directionX = dx / distance
-            directionY = dy / distance
-            existingBullets.append(bullet(defaultBulletSpeed, [playerX, playerY], [directionX, directionY], True, pygame.draw.circle(screen, (255, 255, 255), (playerX, playerY), 5)))
+            direction = [dx / distance, dy / distance]
+            existingBullets.append(bullet(playerPosition, direction, defaultBulletSpeed, True))
             bulletCooldown = bulletCooldownLength
 
-    clock.tick(60)
-    bulletCooldown -= 1    
-    for enemies in existingEnemies:
-        if enemies.existance:
-            enemies.visual = pygame.draw.circle(screen, (255, 0, 0), (enemies.coordinates[0], enemies.coordinates[1]), 10)
-
     for bullets in existingBullets:
-        if bullets.existance:
-            bullets.coordinates[0] += bullets.direction[0] * bullets.speed                       
-            bullets.coordinates[1] += bullets.direction[1] * bullets.speed
-            bullets.visual = pygame.draw.circle(screen, (255, 255, 255), (bullets.coordinates[0], bullets.coordinates[1]), 5)
-        
-        if (enemies.visual).colliderect(bullets.visual):
-            bullets.existance = False
-            enemies.existance = False          
-            newEnemyX = random.randrange(0, 800)
-            newEnemyY = random.randrange(0, 800)
-            newEnemy = enemy(True, (newEnemyX, newEnemyY), pygame.draw.circle(screen, (255, 0, 0), (newEnemyX, newEnemyY), 10))
-            existingEnemies.append(newEnemy)
+        bullets.update()
+        bullets.draw(mainscreen)
 
-    character = pygame.draw.circle(screen,(255,0,255),(playerX,playerY),(10),5)
-    pygame.display.update()
+    for enemies in existingEnemies:
+        enemy.draw(enemies, mainscreen)
+        
+        for bullets in existingBullets:
+            if enemies.rect.colliderect(bullets.rect) and enemies.existance and bullets.existance:
+                bullets.existance = False
+                enemies.existance = False
+                existingBullets.remove(bullets)
+                existingEnemies.remove(enemies)
+                newPos = (random.randint(0, 800), random.randint(0, 800))
+                existingEnemies.append(enemy(newPos, True))
+                break
+            
+    bulletCooldown -= 0.1
+
+    characterRect.center = [1, 1]
+    mainscreen.blit(characterAsset, characterRect)
+
+    pygame.display.flip()
+
 pygame.quit()
