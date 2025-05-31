@@ -35,16 +35,16 @@ class enemy:
 
 pygame.init()
 characterAsset = pygame.image.load("playersprite1.png")
-characterRect = characterAsset.get_rect(center=(400, 400))
-
+characterRect = characterAsset.get_rect(center=(300, 300))
 bulletCooldownLength = 1
 bulletCooldown = 0
 playerSpeed = 5
 defaultBulletSpeed = 10
 clock = pygame.time.Clock()
 mainscreen = pygame.display.set_mode((800,800))
-existingBullets = [bullet([characterRect.x, characterRect.y], [0, 0], defaultBulletSpeed, False, (255, 255, 255))]
+existingBullets = [bullet(characterRect.midtop, [0, 0], defaultBulletSpeed, False, (255, 255, 255))]
 existingEnemies = [enemy((400, 400), True)]
+angle = 0
 running = True
 
 
@@ -99,10 +99,16 @@ while running:
                 break
 
     bulletCooldown -= 0.1
+    mouseX, mouseY = pygame.mouse.get_pos()
 
-    
-    characterRect.clamp_ip(mainscreen.get_rect())
-    mainscreen.blit(characterAsset, characterRect)
+    angle = degrees(atan2(mouseY - characterRect.centery, mouseX - characterRect.centerx)) + 90
+
+    scaledAsset = pygame.transform.scale(characterAsset, (characterAsset.get_width() * 3, characterAsset.get_height() * 3))
+    rotatedAsset = pygame.transform.rotate(scaledAsset, -angle) 
+
+    newRect = rotatedAsset.get_rect(center=characterRect.center)
+
+    mainscreen.blit(rotatedAsset, newRect)
 
     pygame.display.flip()
 
