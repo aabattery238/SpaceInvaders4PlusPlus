@@ -33,9 +33,22 @@ class enemy:
     def draw(self, surface):
         self.visual = pygame.draw.circle(surface, (255, 0, 0), self.position, enemyRadius)
 
+def isStartClicked(mousePos):
+    global mainMenuState
+    pygame.event.get()
+    if mousePos[0] in range(startButtonRect.x,startButtonRect.x+320) and mousePos[1] in range(startButtonRect.y,startButtonRect.y+130) and event.type == pygame.MOUSEBUTTONUP:
+        mainMenuState = False
+    startButtonRect.clamp_ip(mainscreen.get_rect())
+    mainscreen.blit(scaledStartButtonAsset, startButtonRect)
+
+
 pygame.init()
 characterAsset = pygame.image.load("playersprite1.png")
 characterRect = characterAsset.get_rect(center=(300, 300))
+startButtonAsset = pygame.image.load("startbutton.png")
+scaledStartButtonAsset = pygame.transform.scale(startButtonAsset, (startButtonAsset.get_width() * 10, startButtonAsset.get_height() * 10))
+startButtonRect = scaledStartButtonAsset.get_rect(center=(400,400))
+
 bulletCooldownLength = 1
 bulletCooldown = 0
 playerSpeed = 5
@@ -46,8 +59,7 @@ existingBullets = [bullet(characterRect.midtop, [0, 0], defaultBulletSpeed, Fals
 existingEnemies = [enemy((400, 400), True)]
 angle = 0
 running = True
-
-
+mainMenuState = True
 
 while running:
     clock.tick(60)
@@ -58,57 +70,63 @@ while running:
             running = False
     
     keys = pygame.key.get_pressed()
+    mousePos = pygame.mouse.get_pos()
+    
+    
+    if mainMenuState == True:
+        isStartClicked(mousePos)
 
-    if keys[K_d]:
-        characterRect.x += playerSpeed
-    if keys[K_a]:
-        characterRect.x -= playerSpeed
-    if keys[K_w]:
-        characterRect.y -= playerSpeed
-    if keys[K_s]:
-        characterRect.y += playerSpeed
+    elif mainMenuState == False:
+        if keys[K_d]:
+            characterRect.x += playerSpeed
+        if keys[K_a]:
+            characterRect.x -= playerSpeed
+        if keys[K_w]:
+            characterRect.y -= playerSpeed
+        if keys[K_s]:
+            characterRect.y += playerSpeed
 
-    if keys[K_SPACE] and bulletCooldown <= 0:
-        print("cooldown")
-        mouseX, mouseY = pygame.mouse.get_pos()
-        dx, dy = mouseX - characterRect.x, mouseY - characterRect.y
-        distance = hypot(dx, dy)
-        
-        if distance != 0:
-            print("distance")
-            direction = [dx / distance, dy / distance]
-            existingBullets.append(bullet([characterRect.x, characterRect.y], direction, defaultBulletSpeed, True, (255, 255, 255)))
-            bulletCooldown = bulletCooldownLength
+        if keys[K_SPACE] and bulletCooldown <= 0:
+            print("cooldown")
+            mouseX, mouseY = pygame.mouse.get_pos()
+            dx, dy = mouseX - characterRect.x, mouseY - characterRect.y
+            distance = hypot(dx, dy)
+            
+            if distance != 0:
+                print("distance")
+                direction = [dx / distance, dy / distance]
+                existingBullets.append(bullet([characterRect.x, characterRect.y], direction, defaultBulletSpeed, True, (255, 255, 255)))
+                bulletCooldown = bulletCooldownLength
 
-    for bullets in existingBullets:
-        if bullets.existance:
-            bullets.update()
-            bullets.draw(mainscreen)
-
-    for enemies in existingEnemies:
-        enemy.draw(enemies, mainscreen)
-        
         for bullets in existingBullets:
-            if (enemies.visual).colliderect(bullets.visual) and enemies.existance and bullets.existance:
-                bullets.existance = False
-                enemies.existance = False
-                existingBullets.remove(bullets)
-                existingEnemies.remove(enemies)
-                newPos = (random.randint(0, 800), random.randint(0, 800))
-                existingEnemies.append(enemy(newPos, True))
-                break
+            if bullets.existance:
+                bullets.update()
+                bullets.draw(mainscreen)
 
-    bulletCooldown -= 0.1
-    mouseX, mouseY = pygame.mouse.get_pos()
+        for enemies in existingEnemies:
+            enemy.draw(enemies, mainscreen)
+            
+            for bullets in existingBullets:
+                if (enemies.visual).colliderect(bullets.visual) and enemies.existance and bullets.existance:
+                    bullets.existance = False
+                    enemies.existance = False
+                    existingBullets.remove(bullets)
+                    existingEnemies.remove(enemies)
+                    newPos = (random.randint(0, 800), random.randint(0, 800))
+                    existingEnemies.append(enemy(newPos, True))
+                    break
 
-    angle = degrees(atan2(mouseY - characterRect.centery, mouseX - characterRect.centerx)) + 90
+        bulletCooldown -= 0.1
+        mouseX, mouseY = pygame.mouse.get_pos()
 
-    scaledAsset = pygame.transform.scale(characterAsset, (characterAsset.get_width() * 3, characterAsset.get_height() * 3))
-    rotatedAsset = pygame.transform.rotate(scaledAsset, -angle) 
+        angle = degrees(atan2(mouseY - characterRect.centery, mouseX - characterRect.centerx)) + 90
 
-    newRect = rotatedAsset.get_rect(center=characterRect.center)
+        scaledAsset = pygame.transform.scale(characterAsset, (characterAsset.get_width() * 3, characterAsset.get_height() * 3))
+        rotatedAsset = pygame.transform.rotate(scaledAsset, -angle) 
 
-    mainscreen.blit(rotatedAsset, newRect)
+        newRect = rotatedAsset.get_rect(center=characterRect.center)
+
+        mainscreen.blit(rotatedAsset, newRect)
 
     pygame.display.flip()
 
