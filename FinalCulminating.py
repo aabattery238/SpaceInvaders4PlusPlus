@@ -14,7 +14,7 @@ class character:
     #Initialize Player Class
     def __init__(self, position):
         self.immunity = 0
-        self.health = 0
+        self.health = 5
         self.position = tuple(position)
         self.assets = [transform.scale_by(image.load("playersprite1.png"), 3), transform.scale_by(image.load("playersprite2.png"), 3)]
         self.rect = self.assets[0].get_rect(center = self.position)
@@ -99,9 +99,9 @@ mainMenuState = True
 def mainMenuScreen(mousePos):
     global mainMenuState
 
-    menu = transform.scale_by(image.load("menubutton.png"), 6)
+    menu = transform.scale_by(image.load("menubutton.png"), 5)
     menuRect = menu.get_rect(center=(300, 400))
-    startButton = transform.scale_by(image.load("startbutton.png"), 8)
+    startButton = transform.scale_by(image.load("startbutton.png"), 5)
     startButtonRect = startButton.get_rect(center=(500, 400))
 
     pygame.event.get()
@@ -117,7 +117,9 @@ def mainMenuScreen(mousePos):
 
 
 def endScreen(mousePos):
-    global player, existingBullets, existingEnemies, running
+    global player, existingBullets, existingEnemies, running, mainMenuState
+    player.health = 0
+    mainMenuState = False
     gameOver = transform.scale_by(image.load("gameover.png"), 6)
     gameOverRect = gameOver.get_rect(center=(400, 200))
     quitButton = transform.scale_by(image.load("quitbutton.png"), 5)
@@ -130,9 +132,9 @@ def endScreen(mousePos):
     if quitButtonRect.collidepoint(mousePos) and (event.type == MOUSEBUTTONUP):
         running = False
     elif retryButtonRect.collidepoint(mousePos) and (event.type == MOUSEBUTTONUP):
-        player.health = 5
+        player = character((300, 300))
         existingBullets = []
-        existingEnemies = []
+        existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2)]
 
     for button in [[retryButton, retryButtonRect], [quitButton, quitButtonRect], [gameOver, gameOverRect]]:
         mainscreen.blit(button[0], button[1])
@@ -154,10 +156,10 @@ while running:
     keys = pygame.key.get_pressed()
     mousePos = pygame.mouse.get_pos()
 
-    if mainMenuState == True:
+    if mainMenuState:
         mainMenuScreen(mousePos)
     
-    elif mainMenuState == False:
+    elif not mainMenuState:
         if player.health <= 0:
             endScreen(mousePos)
             
