@@ -3,6 +3,7 @@ from pygame import *
 from pygame.locals import *
 import random
 from math import *
+import time
 
 clock = pygame.time.Clock()
 mainscreen = pygame.display.set_mode((800,800))
@@ -95,22 +96,46 @@ existingBullets = [bullet(player, (0, 0), (0, 0), (0, 0, 0))]
 existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2)]
 playerBulletCooldown = 0
 playerBulletCooldownLength = 60
+
+#configure the scales to adjust size
+#start button
 startButtonAsset = pygame.image.load("startbutton.png")
-scaledStartButtonAsset = pygame.transform.scale(startButtonAsset, (startButtonAsset.get_width() * 10, startButtonAsset.get_height() * 10))
+startButtonAssetScale = 6
+scaledStartButtonAsset = pygame.transform.scale(startButtonAsset, (startButtonAsset.get_width() * startButtonAssetScale, startButtonAsset.get_height() * startButtonAssetScale))
 startButtonRect = scaledStartButtonAsset.get_rect(center=(400,400))
+#gameover sprite
+gameOverAsset = pygame.image.load("gameover.png")
+gameOverAssetScale = 10
+scaledGameOverAsset = pygame.transform.scale(gameOverAsset, (gameOverAsset.get_width() * gameOverAssetScale, gameOverAsset.get_height() * gameOverAssetScale))
+gameOverRect = scaledGameOverAsset.get_rect(center=(400,200))
+#menu button
+menuButtonAsset = pygame.image.load("menubutton.png")
+menuButtonAssetScale = 6
+scaledMenuButtonAsset = pygame.transform.scale(menuButtonAsset, (menuButtonAsset.get_width() * menuButtonAssetScale, menuButtonAsset.get_height() * menuButtonAssetScale))
+menuButtonRect = menuButtonAsset.get_rect(center=(320,400))
+
 mainMenuState = True
 
-def isStartClicked(mousePos):
+def mainMenuScreen(mousePos):
     global mainMenuState
     pygame.event.get()
-    if mousePos[0] in range(startButtonRect.x,startButtonRect.x+320) and mousePos[1] in range(startButtonRect.y,startButtonRect.y+130) and event.type == pygame.MOUSEBUTTONUP:
+    player.health = 5
+    if mousePos[0] in range(startButtonRect.x,startButtonRect.x+(scaledStartButtonAsset.get_width())) and mousePos[1] in range(startButtonRect.y,startButtonRect.y+(scaledStartButtonAsset.get_height())) and event.type == pygame.MOUSEBUTTONUP:
         mainMenuState = False
     startButtonRect.clamp_ip(mainscreen.get_rect())
     mainscreen.blit(scaledStartButtonAsset, startButtonRect)
 
+def endScreen(mousePos):
+    global mainMenuState
+    pygame.event.get()
+    if mousePos[0] in range(menuButtonRect.x,menuButtonRect.x+(scaledMenuButtonAsset.get_width())) and mousePos[1] in range(menuButtonRect.y,menuButtonRect.y+(scaledMenuButtonAsset.get_height())) and event.type == pygame.MOUSEBUTTONUP:
+        mainMenuState = True
+        print("skibidi")
+    menuButtonRect.clamp_ip(mainscreen.get_rect())
+    mainscreen.blit(scaledMenuButtonAsset, menuButtonRect)
+    
+
 pygame.init()
-
-
 
 
 while running:
@@ -125,80 +150,81 @@ while running:
     mousePos = pygame.mouse.get_pos()
 
     if mainMenuState == True:
-        isStartClicked(mousePos)
+        mainMenuScreen(mousePos)
     
     elif mainMenuState == False:
+        if player.health <= 0:
+            endScreen(mousePos)
+        else:
+            if keys[K_d]:
+                player.rect.centerx += 5
+            if keys[K_a]:
+                player.rect.centerx -= 5
+            if keys[K_w]:
+                player.rect.centery -= 5
+            if keys[K_s]:
+                player.rect.centery += 5
 
-        if keys[K_d]:
-            player.rect.centerx += 5
-        if keys[K_a]:
-            player.rect.centerx -= 5
-        if keys[K_w]:
-            player.rect.centery -= 5
-        if keys[K_s]:
-            player.rect.centery += 5
+            if keys[K_SPACE] and playerBulletCooldown <= 0:
+                mouseX, mouseY = pygame.mouse.get_pos()
+                dx, dy = mouseX - player.rect.centerx, mouseY - player.rect.centery
+                distance = hypot(dx, dy)
 
-        if keys[K_SPACE] and playerBulletCooldown <= 0:
-            mouseX, mouseY = pygame.mouse.get_pos()
-            dx, dy = mouseX - player.rect.centerx, mouseY - player.rect.centery
-            distance = hypot(dx, dy)
-
-            if distance != 0:
-                direction = [dx / distance, dy / distance]
-                existingBullets.append(bullet(player, player.rect.center, direction, (255, 255, 255 )))
-                playerBulletCooldown = playerBulletCooldownLength
-
-        for bullets in existingBullets:
-            if bullets.existance:
-                bullets.update()
-                bullets.draw()
-
-        for enemies in existingEnemies:
-            if enemies.health <= 0:
-                enemies.existance = False
-                existingEnemies.remove(enemies)
-                
-            if enemies.existance:
-                enemies.update(player.rect.center)
-                enemies.draw(mainscreen)
-
-                if enemies.cooldown <= 0:
-                    dx, dy = player.rect.centerx - enemies.position[0], player.rect.centery - enemies.position[1]
-                    distance = hypot(dx, dy)
-
-                    if distance != 0:
-                        direction = [dx / distance, dy / distance]
-                        existingBullets.append(bullet(enemies, enemies.rect.center, direction, (0, 255, 0)))
-                    enemies.cooldown = enemies.cooldownLength
-                else:
-                    enemies.cooldown -= enemies.shootingSpeed
-
-            enemiesBullets = []
+                if distance != 0:
+                    direction = [dx / distance, dy / distance]
+                    existingBullets.append(bullet(player, player.rect.center, direction, (255, 255, 255 )))
+                    playerBulletCooldown = playerBulletCooldownLength
 
             for bullets in existingBullets:
-                if bullets.shooter == player:
-                    if enemies.rect.colliderect(bullets.visual) and enemies.existance and bullets.existance:
-                        bullets.existance = False
-                        existingBullets.remove(bullets)
-                        enemies.health -= 1
-                        if len(existingEnemies) <= 3:
-                            newPos = (random.randint(0, 700), random.randint(0, 700))
-                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1))
-                
-                elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
-                    if player.rect.colliderect(bullets.visual) and bullets.existance:
-                        print("-1 Health")
-                        player.health -= 1
-                        bullets.existance = False
-                        existingBullets.remove(bullets)
-                        player.immunity = 20
+                if bullets.existance:
+                    bullets.update()
+                    bullets.draw()
 
-        
-        if player.immunity > 0:
-            player.immunity -= 2
+            for enemies in existingEnemies:
+                if enemies.health <= 0:
+                    enemies.existance = False
+                    existingEnemies.remove(enemies)
+                    
+                if enemies.existance:
+                    enemies.update(player.rect.center)
+                    enemies.draw(mainscreen)
 
-        playerBulletCooldown -= 5
-        player.update()
-        player.draw()
+                    if enemies.cooldown <= 0:
+                        dx, dy = player.rect.centerx - enemies.position[0], player.rect.centery - enemies.position[1]
+                        distance = hypot(dx, dy)
+
+                        if distance != 0:
+                            direction = [dx / distance, dy / distance]
+                            existingBullets.append(bullet(enemies, enemies.rect.center, direction, (0, 255, 0)))
+                        enemies.cooldown = enemies.cooldownLength
+                    else:
+                        enemies.cooldown -= enemies.shootingSpeed
+
+                enemiesBullets = []
+
+                for bullets in existingBullets:
+                    if bullets.shooter == player:
+                        if enemies.rect.colliderect(bullets.visual) and enemies.existance and bullets.existance:
+                            bullets.existance = False
+                            existingBullets.remove(bullets)
+                            enemies.health -= 1
+                            if len(existingEnemies) <= 3:
+                                newPos = (random.randint(0, 700), random.randint(0, 700))
+                                existingEnemies.append(enemy(newPos, player.rect.center, 2, 1))
+                    
+                    elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
+                        if player.rect.colliderect(bullets.visual) and bullets.existance:
+                            print("-1 Health")
+                            player.health -= 1
+                            bullets.existance = False
+                            existingBullets.remove(bullets)
+                            player.immunity = 20
+            
+            if player.immunity > 0:
+                player.immunity -= 2
+
+            playerBulletCooldown -= 5
+            player.update()
+            player.draw()
 
     pygame.display.flip()
