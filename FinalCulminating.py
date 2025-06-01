@@ -4,34 +4,101 @@ from pygame.locals import *
 import random
 from math import *
 
+clock = pygame.time.Clock()
+mainscreen = pygame.display.set_mode((800,800))
 
-bulletRadius = 5
-enemyRadius = 10
 
-class bullet:
-    def __init__(self, position, direction, speed, existance, colour):
-        self.position = position
-        self.direction = direction
-        self.speed = speed
-        self.existance = existance
-        self.colour = colour
-        self.visual = pygame.draw.circle(mainscreen, self.colour, self.position, 5)
+
+class character:
+    #Initialize Player Class
+    def __init__(self, position):
+        self.immunity = 0
+        self.health = 5
+        self.position = tuple(position)
+        self.assets = [transform.scale_by(image.load("playersprite1.png"), 3), transform.scale_by(image.load("playersprite2.png"), 3)]
+        self.rect = self.assets[0].get_rect(center = self.position)
+        self.frameCounter = 0
+        self.currentFrame = 0
 
     def update(self):
-        self.position[0] += self.direction[0] * self.speed
-        self.position[1] += self.direction[1] * self.speed
+        #Update the Frame of Class Character
+        self.frameCounter += 1
+        if self.frameCounter >= 10:
+            self.currentFrame = (self.currentFrame + 1) % len(self.assets)
+            self.frameCounter = 0
+
+    def draw(self):
+        #Draw the Image based on scaling, rotation and 
+        mouseX, mouseY = pygame.mouse.get_pos()
+        angle = degrees(atan2(mouseY - self.rect.centery, mouseX - self.rect.centerx)) + 90
+        self.currentAsset = transform.rotate(self.assets[self.currentFrame], -angle)
+        self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
+        mainscreen.blit(self.currentAsset, self.updatedRect)
+
+class bullet():
+    #Initialize Bullet Class
+    def __init__(self, shooter, position, direction, colour):
+        self.shooter = shooter
+        self.position = list(position)
+        self.direction = list(direction)
+        self.colour = tuple(colour)
+        self.existance = True
+        self.visual = draw.circle(mainscreen, self.colour, self.position, 5)
+
+    def update(self):
+        self.position[0] += self.direction[0] * 5
+        self.position[1] += self.direction[1] * 5
+
+    def draw(self):
         self.visual = pygame.draw.circle(mainscreen, self.colour, self.position, 5)
-    
-    def draw(self, screen):
-        self.visual = pygame.draw.circle(screen, self.colour, self.position, 5)
+        
+
 
 class enemy:
-    def __init__(self, position, existance):
-        self.position = position
-        self.existance = existance
+    #Initialize Enemy Class
+    def __init__(self, position, direction, shootingSpeed, health):
+        self.position = list(position)
+        self.direction = list(direction)
+        self.health = health
+        self.existance = True
+        self.shootingSpeed = shootingSpeed
+        self.assets = [transform.scale_by(image.load("basicenemysprite1.png"), 3)]
+        self.rect = self.assets[0].get_rect(center = self.position)
+        self.frameCounter = 0
+        self.currentFrame = 0
+        self.cooldown = 0
+        self.cooldownLength = 60
 
-    def draw(self, surface):
-        self.visual = pygame.draw.circle(surface, (255, 0, 0), self.position, enemyRadius)
+    def update(self, playerPosition):
+        self.playerPosition = playerPosition
+        dx = playerPosition[0] - self.position[0]
+        dy = playerPosition[1] - self.position[1]
+        distance = hypot(dx, dy)
+
+        if distance > 150:
+            self.direction = [dx / distance, dy / distance]
+            self.position[0] += self.direction[0] * 2
+            self.position[1] += self.direction[1] * 2
+
+            self.rect.centerx = self.position[0]
+            self.rect.centery = self.position[1]
+
+    def draw(self, screen):
+        angle = degrees(atan2(self.playerPosition[1] - self.rect.centery, self.playerPosition[0] - self.rect.centerx)) -90
+        self.currentAsset = transform.rotate(self.assets[self.currentFrame], -angle)
+        self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
+        mainscreen.blit(self.currentAsset, self.updatedRect)
+
+player = character((300, 300))
+running = True
+existingBullets = [bullet(player, (0, 0), (0, 0), (0, 0, 0))]
+existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2)]
+playerBulletCooldown = 0
+playerBulletCooldownLength = 60
+startButtonAsset = pygame.image.load("startbutton.png")
+scaledStartButtonAsset = pygame.transform.scale(startButtonAsset, (startButtonAsset.get_width() * 10, startButtonAsset.get_height() * 10))
+startButtonRect = scaledStartButtonAsset.get_rect(center=(400,400))
+mainMenuState = True
 
 def isStartClicked(mousePos):
     global mainMenuState
@@ -41,93 +108,97 @@ def isStartClicked(mousePos):
     startButtonRect.clamp_ip(mainscreen.get_rect())
     mainscreen.blit(scaledStartButtonAsset, startButtonRect)
 
-
 pygame.init()
-characterAsset = pygame.image.load("playersprite1.png")
-characterRect = characterAsset.get_rect(center=(300, 300))
-startButtonAsset = pygame.image.load("startbutton.png")
-scaledStartButtonAsset = pygame.transform.scale(startButtonAsset, (startButtonAsset.get_width() * 10, startButtonAsset.get_height() * 10))
-startButtonRect = scaledStartButtonAsset.get_rect(center=(400,400))
 
-bulletCooldownLength = 1
-bulletCooldown = 0
-playerSpeed = 5
-defaultBulletSpeed = 10
-clock = pygame.time.Clock()
-mainscreen = pygame.display.set_mode((800,800))
-existingBullets = [bullet(characterRect.midtop, [0, 0], defaultBulletSpeed, False, (255, 255, 255))]
-existingEnemies = [enemy((400, 400), True)]
-angle = 0
-running = True
-mainMenuState = True
+
+
 
 while running:
-    clock.tick(60)
+    ticks = clock.tick(60)
     mainscreen.fill((0, 0, 0))
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    
+
     keys = pygame.key.get_pressed()
     mousePos = pygame.mouse.get_pos()
-    
-    
+
     if mainMenuState == True:
         isStartClicked(mousePos)
-
+    
     elif mainMenuState == False:
-        if keys[K_d]:
-            characterRect.x += playerSpeed
-        if keys[K_a]:
-            characterRect.x -= playerSpeed
-        if keys[K_w]:
-            characterRect.y -= playerSpeed
-        if keys[K_s]:
-            characterRect.y += playerSpeed
 
-        if keys[K_SPACE] and bulletCooldown <= 0:
-            print("cooldown")
+        if keys[K_d]:
+            player.rect.centerx += 5
+        if keys[K_a]:
+            player.rect.centerx -= 5
+        if keys[K_w]:
+            player.rect.centery -= 5
+        if keys[K_s]:
+            player.rect.centery += 5
+
+        if keys[K_SPACE] and playerBulletCooldown <= 0:
             mouseX, mouseY = pygame.mouse.get_pos()
-            dx, dy = mouseX - characterRect.x, mouseY - characterRect.y
+            dx, dy = mouseX - player.rect.centerx, mouseY - player.rect.centery
             distance = hypot(dx, dy)
-            
+
             if distance != 0:
-                print("distance")
                 direction = [dx / distance, dy / distance]
-                existingBullets.append(bullet([characterRect.x, characterRect.y], direction, defaultBulletSpeed, True, (255, 255, 255)))
-                bulletCooldown = bulletCooldownLength
+                existingBullets.append(bullet(player, player.rect.center, direction, (255, 255, 255 )))
+                playerBulletCooldown = playerBulletCooldownLength
 
         for bullets in existingBullets:
             if bullets.existance:
                 bullets.update()
-                bullets.draw(mainscreen)
+                bullets.draw()
 
         for enemies in existingEnemies:
-            enemy.draw(enemies, mainscreen)
-            
+            if enemies.health <= 0:
+                enemies.existance = False
+                existingEnemies.remove(enemies)
+                
+            if enemies.existance:
+                enemies.update(player.rect.center)
+                enemies.draw(mainscreen)
+
+                if enemies.cooldown <= 0:
+                    dx, dy = player.rect.centerx - enemies.position[0], player.rect.centery - enemies.position[1]
+                    distance = hypot(dx, dy)
+
+                    if distance != 0:
+                        direction = [dx / distance, dy / distance]
+                        existingBullets.append(bullet(enemies, enemies.rect.center, direction, (0, 255, 0)))
+                    enemies.cooldown = enemies.cooldownLength
+                else:
+                    enemies.cooldown -= enemies.shootingSpeed
+
+            enemiesBullets = []
+
             for bullets in existingBullets:
-                if (enemies.visual).colliderect(bullets.visual) and enemies.existance and bullets.existance:
-                    bullets.existance = False
-                    enemies.existance = False
-                    existingBullets.remove(bullets)
-                    existingEnemies.remove(enemies)
-                    newPos = (random.randint(0, 800), random.randint(0, 800))
-                    existingEnemies.append(enemy(newPos, True))
-                    break
+                if bullets.shooter == player:
+                    if enemies.rect.colliderect(bullets.visual) and enemies.existance and bullets.existance:
+                        bullets.existance = False
+                        existingBullets.remove(bullets)
+                        enemies.health -= 1
+                        if len(existingEnemies) <= 3:
+                            newPos = (random.randint(0, 700), random.randint(0, 700))
+                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1))
+                
+                elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
+                    if player.rect.colliderect(bullets.visual) and bullets.existance:
+                        print("-1 Health")
+                        player.health -= 1
+                        bullets.existance = False
+                        existingBullets.remove(bullets)
+                        player.immunity = 20
 
-        bulletCooldown -= 0.1
-        mouseX, mouseY = pygame.mouse.get_pos()
+        
+        if player.immunity > 0:
+            player.immunity -= 2
 
-        angle = degrees(atan2(mouseY - characterRect.centery, mouseX - characterRect.centerx)) + 90
-
-        scaledAsset = pygame.transform.scale(characterAsset, (characterAsset.get_width() * 3, characterAsset.get_height() * 3))
-        rotatedAsset = pygame.transform.rotate(scaledAsset, -angle) 
-
-        newRect = rotatedAsset.get_rect(center=characterRect.center)
-
-        mainscreen.blit(rotatedAsset, newRect)
+        playerBulletCooldown -= 5
+        player.update()
+        player.draw()
 
     pygame.display.flip()
-
-pygame.quit()
