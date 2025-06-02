@@ -5,10 +5,17 @@ import random
 from math import *
 import time
 
+levelDetails = {
+    1 : {
+        "waves" : 3,
+        "enemies/wave" : 2
+    }
+}
+
+
+
 clock = pygame.time.Clock()
 mainscreen = pygame.display.set_mode((800,800))
-
-
 
 class character:
     #Initialize Player Class
@@ -20,6 +27,7 @@ class character:
         self.rect = self.assets[0].get_rect(center = self.position)
         self.frameCounter = 0
         self.currentFrame = 0
+        self.bulletCooldown = 0
 
     def update(self):
         #Update the Frame of Class Character
@@ -63,7 +71,7 @@ class enemy:
         self.health = health
         self.existance = True
         self.shootingSpeed = shootingSpeed
-        self.assets = [transform.scale_by(image.load("basicenemysprite1.png"), 3)]
+        self.assets = [transform.scale_by(image.load("basicenemysprite1.png"), 3), transform.scale_by(image.load("basicenemysprite2.png"), 3)]
         self.rect = self.assets[0].get_rect(center = self.position)
         self.frameCounter = 0
         self.currentFrame = 0
@@ -71,6 +79,11 @@ class enemy:
         self.cooldownLength = 60
 
     def update(self, playerPosition):
+        self.frameCounter += 1
+        if self.frameCounter >= 10:
+            self.currentFrame = (self.currentFrame + 1) % len(self.assets)
+            self.frameCounter = 0
+
         self.playerPosition = playerPosition
         dx = playerPosition[0] - self.position[0]
         dy = playerPosition[1] - self.position[1]
@@ -88,7 +101,7 @@ class enemy:
         angle = degrees(atan2(self.playerPosition[1] - self.rect.centery, self.playerPosition[0] - self.rect.centerx)) -90
         self.currentAsset = transform.rotate(self.assets[self.currentFrame], -angle)
         self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
-        mainscreen.blit(self.currentAsset, self.updatedRect)
+        screen.blit(self.currentAsset, self.updatedRect)
 
 
 running = True
@@ -120,7 +133,7 @@ def mainMenuScreen(mousePos, events):
 def endScreen(mousePos):
     global player, existingBullets, existingEnemies, running, mainMenuState
     gameOver = transform.scale_by(image.load("gameover.png"), 6)
-    gameOverRect = gameOver.get_rect(center=(400, 200))
+    gameOverRect = gameOver.get_rect(center=(400, 300))
     quitButton = transform.scale_by(image.load("quitbutton.png"), 5)
     quitButtonRect = quitButton.get_rect(center=(300, 400))
     retryButton = transform.scale_by(image.load("retrybutton.png"), 5)
@@ -138,7 +151,7 @@ def endScreen(mousePos):
             mainscreen.blit(button[0], button[1])
     
 
-playerBulletCooldown = 0
+
 player = character((300, 300))
 existingBullets = [bullet(player, (0, 0), (0, 0), (0, 0, 0))]
 existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2)]
@@ -146,7 +159,7 @@ pygame.init()
 
 while running:
     ticks = clock.tick(60)
-    mainscreen.fill((0, 0, 0))
+    mainscreen.fill((0,0,0))
 
     events = pygame.event.get()
     for event in events:
@@ -173,7 +186,7 @@ while running:
             if keys[K_s]:
                 player.rect.centery += 5
 
-            if keys[K_SPACE] and playerBulletCooldown <= 0:
+            if keys[K_SPACE] and player.bulletCooldown <= 0:
                 mouseX, mouseY = pygame.mouse.get_pos()
                 dx, dy = mouseX - player.rect.centerx, mouseY - player.rect.centery
                 distance = hypot(dx, dy)
@@ -181,7 +194,7 @@ while running:
                 if distance != 0:
                     direction = [dx / distance, dy / distance]
                     existingBullets.append(bullet(player, player.rect.center, direction, (255, 255, 255 )))
-                    playerBulletCooldown = playerBulletCooldownLength
+                    player.bulletCooldown = playerBulletCooldownLength
 
             for bullets in existingBullets:
                 if bullets.existance:
@@ -231,7 +244,11 @@ while running:
             if player.immunity > 0:
                 player.immunity -= 2
 
-            playerBulletCooldown -= 5
+            if player.rect.collidepoint(mousePos):
+                playerBulletCooldownLength = 0
+            
+            
+            player.bulletCooldown -= 5
             player.update()
             player.draw()
 
