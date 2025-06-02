@@ -96,7 +96,7 @@ playerBulletCooldownLength = 60
 
 mainMenuState = True
 
-def mainMenuScreen(mousePos):
+def mainMenuScreen(mousePos, events):
     global mainMenuState
 
     menu = transform.scale_by(image.load("menubutton.png"), 5)
@@ -104,13 +104,14 @@ def mainMenuScreen(mousePos):
     startButton = transform.scale_by(image.load("startbutton.png"), 5)
     startButtonRect = startButton.get_rect(center=(500, 400))
 
-    pygame.event.get()
-    
-
-    if menuRect.collidepoint(mousePos) and (event.type == MOUSEBUTTONUP):
-        pass
-    elif startButtonRect.collidepoint(mousePos) and (event.type == MOUSEBUTTONUP):
-        mainMenuState = False
+    for event in events:
+        if event.type == MOUSEBUTTONUP:
+            print("Mouse Down")
+            if menuRect.collidepoint(mousePos):
+                pass
+            elif startButtonRect.collidepoint(mousePos):
+                print("srjbkjsbf")
+                mainMenuState = False
 
     for button in [[menu, menuRect], [startButton, startButtonRect]]:
         mainscreen.blit(button[0], button[1])
@@ -118,8 +119,6 @@ def mainMenuScreen(mousePos):
 
 def endScreen(mousePos):
     global player, existingBullets, existingEnemies, running, mainMenuState
-    player.health = 0
-    mainMenuState = False
     gameOver = transform.scale_by(image.load("gameover.png"), 6)
     gameOverRect = gameOver.get_rect(center=(400, 200))
     quitButton = transform.scale_by(image.load("quitbutton.png"), 5)
@@ -127,18 +126,18 @@ def endScreen(mousePos):
     retryButton = transform.scale_by(image.load("retrybutton.png"), 5)
     retryButtonRect = retryButton.get_rect(center=(500, 400))
     
-    pygame.event.get()
-
-    if quitButtonRect.collidepoint(mousePos) and (event.type == MOUSEBUTTONUP):
-        running = False
-    elif retryButtonRect.collidepoint(mousePos) and (event.type == MOUSEBUTTONUP):
-        player = character((300, 300))
-        existingBullets = []
-        existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2)]
+    if event.type == MOUSEBUTTONDOWN:
+        if quitButtonRect.collidepoint(mousePos):
+            running = False
+        elif retryButtonRect.collidepoint(mousePos):
+            player = character((300, 300))
+            existingBullets = []
+            existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2)]
 
     for button in [[retryButton, retryButtonRect], [quitButton, quitButtonRect], [gameOver, gameOverRect]]:
-        mainscreen.blit(button[0], button[1])
+            mainscreen.blit(button[0], button[1])
     
+
 playerBulletCooldown = 0
 player = character((300, 300))
 existingBullets = [bullet(player, (0, 0), (0, 0), (0, 0, 0))]
@@ -149,7 +148,8 @@ while running:
     ticks = clock.tick(60)
     mainscreen.fill((0, 0, 0))
 
-    for event in pygame.event.get():
+    events = pygame.event.get()
+    for event in events:
         if event.type == pygame.QUIT:
             running = False
 
@@ -157,10 +157,10 @@ while running:
     mousePos = pygame.mouse.get_pos()
 
     if mainMenuState:
-        mainMenuScreen(mousePos)
+        mainMenuScreen(mousePos, events)
     
     elif not mainMenuState:
-        if player.health <= 0:
+        if player.health == 0:
             endScreen(mousePos)
             
         else:
