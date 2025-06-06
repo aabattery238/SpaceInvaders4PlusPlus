@@ -29,6 +29,7 @@ class character:
         self.currentFrame = 0
         self.bulletCooldown = 0
         self.speed = 5
+        self.points = 0
 
     def update(self):
         #Update the Frame of Class Character
@@ -66,7 +67,7 @@ class bullet():
 
 class enemy:
     #Initialize Enemy Class
-    def __init__(self, position, direction, shootingSpeed, health, orbitRadius, enemyType):
+    def __init__(self, position, direction, shootingSpeed, health, orbitRadius, enemyType, pointValue):
         self.position = list(position)
         self.direction = list(direction)
         self.health = health  
@@ -81,6 +82,7 @@ class enemy:
         self.cooldownLength = 60
         self.orbitRadius = orbitRadius
         self.enemyType = enemyType
+        self.pointValue = pointValue
 
     def update(self, playerPosition):
         self.frameCounter += 1
@@ -119,14 +121,18 @@ playerBulletCooldownLength = 60
 mainMenuState = True
 helpMenuState = False
 
+
 def mainMenuScreen(mousePos):
     global mainMenuState, running, helpMenuState
     startButton = transform.scale_by(image.load("startbutton.png"), 5)
-    startButtonRect = startButton.get_rect(center=(400, 300))
+    startButtonRect = startButton.get_rect(center=(400, 350))
     quitButton = transform.scale_by(image.load("quitbutton.png"), 4)
     quitButtonRect = quitButton.get_rect(center=(300, 400))
     helpButton = transform.scale_by(image.load("helpbutton.png"), 4)
     helpButtonRect = helpButton.get_rect(center=(500, 400))
+    titleCard = transform.scale_by(image.load("titlecard.png"), 4)
+    titleCardRect = titleCard.get_rect(center=(400, 150))
+    
 
     if event.type == MOUSEBUTTONUP:
         print("Mouse Down")
@@ -140,7 +146,7 @@ def mainMenuScreen(mousePos):
             mainMenuState = False
             helpScreen()
 
-    for button in [[startButton, startButtonRect],[quitButton, quitButtonRect],[helpButton,helpButtonRect]]:
+    for button in [[startButton, startButtonRect],[quitButton, quitButtonRect],[helpButton,helpButtonRect], [titleCard, titleCardRect]]:
         mainscreen.blit(button[0], button[1])
 
 
@@ -149,12 +155,16 @@ def endScreen(mousePos):
     menu = transform.scale_by(image.load("menubutton.png"), 4)
     menuRect = menu.get_rect(center=(400, 500))
     gameOver = transform.scale_by(image.load("gameover.png"), 6)
-    gameOverRect = gameOver.get_rect(center=(400, 300))
+    gameOverRect = gameOver.get_rect(center=(400, 200))
     quitButton = transform.scale_by(image.load("quitbutton.png"), 5)
     quitButtonRect = quitButton.get_rect(center=(300, 400))
     retryButton = transform.scale_by(image.load("retrybutton.png"), 5)
     retryButtonRect = retryButton.get_rect(center=(500, 400))
-    
+    font = pygame.font.Font('pixeloid.ttf',40)
+    finalPoints = font.render("Final Score: "+str(player.points),True,(255,255,255),(0,0,0))
+    finalPointsRect = finalPoints.get_rect(center=(400,300))
+
+
     if event.type == MOUSEBUTTONDOWN:
         if quitButtonRect.collidepoint(mousePos):
             running = False
@@ -162,15 +172,15 @@ def endScreen(mousePos):
             player = character((300, 300))
             existingBullets = []
             #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
-            existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2, 150, 0)]
+            existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2, 150, 0, 1)]
         elif menuRect.collidepoint(mousePos):
             mainMenuState = True
             player = character((300, 300))
             existingBullets = []
             #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
-            existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2, 150, 0)]
+            existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2, 150, 0, 1)]
 
-    for button in [[retryButton, retryButtonRect], [quitButton, quitButtonRect], [gameOver, gameOverRect], [menu, menuRect]]:
+    for button in [[retryButton, retryButtonRect], [quitButton, quitButtonRect], [gameOver, gameOverRect], [menu, menuRect],[finalPoints, finalPointsRect]]:
             mainscreen.blit(button[0], button[1])
     
 def helpScreen():
@@ -178,7 +188,7 @@ def helpScreen():
     controlsAsset = transform.scale_by(image.load("controls.png"), 4)
     controlsRect = controlsAsset.get_rect(center=(400, 300))
     menu = transform.scale_by(image.load("menubutton.png"), 4)
-    menuRect = menu.get_rect(center=(400, 600))
+    menuRect = menu.get_rect((400, 600))
     if event.type == MOUSEBUTTONDOWN:
         if menuRect.collidepoint(mousePos):
             helpMenuState = False
@@ -186,9 +196,21 @@ def helpScreen():
     for button in [[controlsAsset, controlsRect], [menu, menuRect]]:
             mainscreen.blit(button[0], button[1])
 
+def healthDisplay():
+    heart = transform.scale_by(image.load("heart.png"), 4)
+    heartRect = heart.get_rect(center=(25,25))
+    font = pygame.font.Font('pixeloid.ttf',40)
+    healthDisplayNumber = font.render(str(player.health),True,(255,255,255),(0,0,0))
+    healthDisplayRect = healthDisplayNumber.get_rect(center=(60,25))
+    for button in [[heart, heartRect], [healthDisplayNumber, healthDisplayRect]]:
+            mainscreen.blit(button[0], button[1])
+
 player = character((300, 300))
 existingBullets = [bullet(player, (0, 0), (0, 0), (0, 0, 0))]
-existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2, 150, 0)]
+existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2, 150, 0, 1)]
+
+
+
 pygame.init()
 
 while running:
@@ -260,6 +282,8 @@ while running:
 
                 for enemies in existingEnemies:
                     if enemies.health <= 0:
+                        player.points += enemies.pointValue
+                        print(player.points)
                         enemies.existance = False
                         existingEnemies.remove(enemies)
                         
@@ -290,19 +314,20 @@ while running:
                                     newPos = (random.randint(0, 700), random.randint(0, 700))
                                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
                                     if random.randint(0,1) == 0:   
-                                        existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0))
+                                        existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
                                     else:
-                                        existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1))
+                                        existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
                                         
                         
                         elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
                             if player.rect.colliderect(bullets.visual) and bullets.existance:
                                 print("-1 Health")
                                 player.health -= 1
+                                
                                 bullets.existance = False
                                 existingBullets.remove(bullets)
                                 player.immunity = 20
-                
+                    
                 if player.immunity > 0:
                     player.immunity -= 2
 
@@ -311,7 +336,10 @@ while running:
                 
                 
                 player.bulletCooldown -= 5
+                healthDisplay()
                 player.update()
                 player.draw()
+
+                
 
     pygame.display.flip()
