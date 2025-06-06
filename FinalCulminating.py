@@ -5,13 +5,13 @@ import random
 from math import *
 import time
 print('start')
-levelDetails = {
+levelproperties = {
     1 : {
         "waves" : 3,
-        "enemies/wave" : 2
+        "enemies/wave" : 2,
+        "enemiesChance" : 1
     }
 }
-
 
 
 clock = pygame.time.Clock()
@@ -208,7 +208,8 @@ def healthDisplay():
 player = character((300, 300))
 existingBullets = [bullet(player, (0, 0), (0, 0), (0, 0, 0))]
 existingEnemies = [enemy((random.randrange(0, 800), random.randrange(0, 300)), player.rect.center, 2, 1, 150, 0, 1)]
-
+level = 1
+wave = 0
 
 
 pygame.init()
@@ -310,16 +311,20 @@ while running:
                                 bullets.existance = False
                                 existingBullets.remove(bullets)
                                 enemies.health -= 1
-                                if len(existingEnemies) <= 3:
-                                    newPos = (random.randint(0, 700), random.randint(0, 300))
+                                if len(existingEnemies)-1 <= 0:
                                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
-                                    enemySpawnType = random.randint(0,3)
-                                    if enemySpawnType == 0:
-                                        existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
-                                    elif enemySpawnType == 1:
-                                        existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
-                                    elif enemySpawnType == 2:
-                                        existingEnemies.append(enemy(newPos, player.rect.center, 3, 5, 0, 2, 10))
+                                    while len(existingEnemies)-1 <= levelDetails["enemies/wave"]:
+                                        newPos = (random.randint(0, 700), random.randint(0, 300))
+                                        enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
+                                        if enemySpawnType == 0:
+                                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
+                                        elif enemySpawnType == 1:
+                                            existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
+                                        elif enemySpawnType == 2:
+                                            existingEnemies.append(enemy(newPos, player.rect.center, 3, 5, 0, 2, 10))
+                                    wave += 1
+                                    player.immunity = 40
+                                    existingBullets = []
                 
                         elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
                             if player.rect.colliderect(bullets.visual) and bullets.existance:
@@ -333,8 +338,20 @@ while running:
                 if player.immunity > 0:
                     player.immunity -= 1
 
-                if player.rect.collidepoint(mousePos):
+                if keys[K_k]:
                     playerBulletCooldownLength = 0
+                    player.health = 100000
+
+
+                if wave == 0:
+                    player.immunity = 40
+                    
+                    levelDetails = levelproperties[level]
+                    while len(existingEnemies) <= levelDetails["enemies/wave"]:
+                        newPos = (random.randint(0, 700), random.randint(0, 300))
+                        existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
+                    wave += 1
+                    print(wave)
                 
                 player.bulletCooldown -= 5
                 healthDisplay()
