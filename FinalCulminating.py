@@ -74,7 +74,7 @@ class enemy:
         self.existance = True
         self.shootingSpeed = shootingSpeed
         #0 is enemy 1, 1 is enemy 2, you know the drill
-        self.assets = [[transform.scale_by(image.load("basicenemysprite1.png"), 3), transform.scale_by(image.load("basicenemysprite2.png"), 3)], [transform.scale_by(image.load("enemy2sprite1.png"), 3), transform.scale_by(image.load("enemy2sprite2.png"), 3)]]
+        self.assets = [[transform.scale_by(image.load("basicenemysprite1.png"), 3), transform.scale_by(image.load("basicenemysprite2.png"), 3)], [transform.scale_by(image.load("enemy2sprite1.png"), 3), transform.scale_by(image.load("enemy2sprite2.png"), 3)], [transform.scale_by(image.load("boss1sprite1.png"), 2), transform.scale_by(image.load("boss1sprite2.png"), 2)]]
         self.rect = self.assets[0][0].get_rect(center = self.position)
         self.frameCounter = 0
         self.currentFrame = 0
@@ -207,7 +207,7 @@ def healthDisplay():
 
 player = character((300, 300))
 existingBullets = [bullet(player, (0, 0), (0, 0), (0, 0, 0))]
-existingEnemies = [enemy((random.randrange(0, 700), random.randrange(0, 700)), player.rect.center, 2, 2, 150, 0, 1)]
+existingEnemies = [enemy((random.randrange(0, 800), random.randrange(0, 300)), player.rect.center, 2, 1, 150, 0, 1)]
 
 
 
@@ -311,35 +311,34 @@ while running:
                                 existingBullets.remove(bullets)
                                 enemies.health -= 1
                                 if len(existingEnemies) <= 3:
-                                    newPos = (random.randint(0, 700), random.randint(0, 700))
+                                    newPos = (random.randint(0, 700), random.randint(0, 300))
                                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
-                                    if random.randint(0,1) == 0:   
+                                    enemySpawnType = random.randint(0,3)
+                                    if enemySpawnType == 0:
                                         existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
-                                    else:
+                                    elif enemySpawnType == 1:
                                         existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
-                                        
-                        
+                                    elif enemySpawnType == 2:
+                                        existingEnemies.append(enemy(newPos, player.rect.center, 3, 5, 0, 2, 10))
+                
                         elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
                             if player.rect.colliderect(bullets.visual) and bullets.existance:
                                 print("-1 Health")
                                 player.health -= 1
-                                
+                                mainscreen.fill((255,0,0))
                                 bullets.existance = False
                                 existingBullets.remove(bullets)
-                                player.immunity = 20
+                                player.immunity = 30
                     
                 if player.immunity > 0:
-                    player.immunity -= 2
+                    player.immunity -= 1
 
                 if player.rect.collidepoint(mousePos):
                     playerBulletCooldownLength = 0
-                
                 
                 player.bulletCooldown -= 5
                 healthDisplay()
                 player.update()
                 player.draw()
-
-                
 
     pygame.display.flip()
