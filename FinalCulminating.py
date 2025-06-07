@@ -8,7 +8,12 @@ print('start')
 levelproperties = {
     1 : {
         "waves" : 3,
-        "enemies/wave" : 2,
+        "enemies/wave" : 3,
+        "enemiesChance" : 0
+    },
+    2 : {
+        "waves" : 4,
+        "enemies/wave" : 5,
         "enemiesChance" : 1
     }
 }
@@ -311,20 +316,6 @@ while running:
                                 bullets.existance = False
                                 existingBullets.remove(bullets)
                                 enemies.health -= 1
-                                if len(existingEnemies)-1 <= 0:
-                                    #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
-                                    while len(existingEnemies)-1 <= levelDetails["enemies/wave"]:
-                                        newPos = (random.randint(0, 700), random.randint(0, 300))
-                                        enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
-                                        if enemySpawnType == 0:
-                                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
-                                        elif enemySpawnType == 1:
-                                            existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
-                                        elif enemySpawnType == 2:
-                                            existingEnemies.append(enemy(newPos, player.rect.center, 3, 5, 0, 2, 10))
-                                    wave += 1
-                                    player.immunity = 40
-                                    existingBullets = []
                 
                         elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
                             if player.rect.colliderect(bullets.visual) and bullets.existance:
@@ -335,23 +326,43 @@ while running:
                                 existingBullets.remove(bullets)
                                 player.immunity = 30
                     
+                levelDetails = levelproperties[level]
+
+                if len(existingEnemies) <= 0:
+                    if wave >= levelDetails["waves"]:
+                        if level + 1 in levelDetails:
+                            print("LEVEL INCREASED!!!!!!!!")
+                            level += 1
+                        else:
+                            print("MAX LEVEL REACHED OR INVALID LEVEL")
+                            level = 2
+                        wave = 0
+                        existingEnemies.clear()
+                        print(level, wave)
+
+                    #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
+                    else: 
+                        while len(existingEnemies) <= levelDetails["enemies/wave"]:
+                            newPos = (random.randint(0, 700), random.randint(0, 300))
+                            enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
+                            if enemySpawnType == 0:
+                                existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
+                            elif enemySpawnType == 1:
+                                existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
+                            elif enemySpawnType == 2:
+                                existingEnemies.append(enemy(newPos, player.rect.center, 3, 5, 0, 2, 10))
+                        wave += 1
+                        player.immunity = 40
+                        existingBullets = []
+
                 if player.immunity > 0:
                     player.immunity -= 1
 
-                if keys[K_k]:
+                if keys[K_o] and keys[K_p]:
                     playerBulletCooldownLength = 0
                     player.health = 100000
 
-
-                if wave == 0:
-                    player.immunity = 40
-                    
-                    levelDetails = levelproperties[level]
-                    while len(existingEnemies) <= levelDetails["enemies/wave"]:
-                        newPos = (random.randint(0, 700), random.randint(0, 300))
-                        existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
-                    wave += 1
-                    print(wave)
+    
                 
                 player.bulletCooldown -= 5
                 healthDisplay()
