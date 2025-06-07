@@ -35,6 +35,8 @@ class character:
         self.bulletCooldown = 0
         self.speed = 5
         self.points = 0
+        self.bulletCooldownLength = 60
+        self.teleport = True
 
     def update(self):
         #Update the Frame of Class Character
@@ -46,8 +48,8 @@ class character:
     def draw(self):
         #Draw the Image based on scaling, rotation and 
         mouseX, mouseY = pygame.mouse.get_pos()
-        angle = degrees(atan2(mouseY - self.rect.centery, mouseX - self.rect.centerx)) + 90
-        self.currentAsset = transform.rotate(self.assets[self.currentFrame], -angle)
+        self.angle = degrees(atan2(mouseY - self.rect.centery, mouseX - self.rect.centerx)) + 90
+        self.currentAsset = transform.rotate(self.assets[self.currentFrame], -self.angle)
         self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
         mainscreen.blit(self.currentAsset, self.updatedRect)
 
@@ -120,9 +122,23 @@ class enemy:
         self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
         screen.blit(self.currentAsset, self.updatedRect)
 
+class powerUp:
+    def __init__(self, type, position):
+        self.position = position
+        self.type = type
+        if self.type == "teleport":
+            self.colour = (255, 0, 255)
+        elif self.type == "health":
+            self.colour = (255, 0, 0)
+        elif self.type == "laser":
+            self.colour = (0, 255, 255)
+    
+    def draw(self, screen):
+        self.visual = draw.circle(screen, self.colour, self.position, 10)
+        
 
 running = True
-playerBulletCooldownLength = 60
+
 mainMenuState = True
 helpMenuState = False
 
@@ -216,7 +232,7 @@ existingEnemies = [enemy((random.randrange(0, 800), random.randrange(0, 300)), p
 level = 1
 wave = 0
 
-
+levelUpPowerUp = []
 pygame.init()
 
 while running:
@@ -279,7 +295,7 @@ while running:
                     if distance != 0:
                         direction = [dx / distance, dy / distance]
                         existingBullets.append(bullet(player, player.rect.center, direction, (255, 255, 255 )))
-                        player.bulletCooldown = playerBulletCooldownLength
+                        player.bulletCooldown = player.bulletCooldownLength
 
                 for bullets in existingBullets:
                     if bullets.existance:
@@ -333,6 +349,8 @@ while running:
                         if level + 1 in levelDetails:
                             print("LEVEL INCREASED!!!!!!!!")
                             level += 1
+                            if random.randrange(0, 10) == 0:
+                                levelUpPowerUp.append(powerUp("teleport", (random.randint(0, 700), random.randint(0, 300))))
                         else:
                             print("MAX LEVEL REACHED OR INVALID LEVEL")
                             level = 2
@@ -359,11 +377,21 @@ while running:
                     player.immunity -= 1
 
                 if keys[K_o] and keys[K_p]:
-                    playerBulletCooldownLength = 0
+                    player.bulletCooldownLength = 0
                     player.health = 100000
-
-    
                 
+                for powers in levelUpPowerUp:
+                    if player.rect.colliderect(powers.visual):
+                        if powers.type == "teleport":
+                            player.teleport = True
+                            levelUpPowerUp.remove(powers)
+                            
+
+                if keys[K_c]:
+                    player.rect.center = mousePos
+                    player.currentAsset = transform.rotate(transform.scale_by(image.load("playerspriteteleport.png"), 3), -player.angle)
+                    player.draw()
+
                 player.bulletCooldown -= 5
                 healthDisplay()
                 player.update()
