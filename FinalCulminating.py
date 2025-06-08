@@ -15,6 +15,11 @@ levelproperties = {
         "waves" : 4,
         "enemies/wave" : 5,
         "enemiesChance" : 1
+    },
+    3 : {
+        "waves" : 4,
+        "enemies/wave" : 5,
+        "enemiesChance" : 3
     }
 }
 
@@ -36,7 +41,10 @@ class character:
         self.speed = 5
         self.points = 0
         self.bulletCooldownLength = 60
-        self.teleport = True
+        self.teleport = False
+        self.teleporting = False
+        self.powerUpCooldown = 0
+        self.powerUpCooldownLength = 120
 
     def update(self):
         #Update the Frame of Class Character
@@ -47,11 +55,17 @@ class character:
 
     def draw(self):
         #Draw the Image based on scaling, rotation and 
-        mouseX, mouseY = pygame.mouse.get_pos()
-        self.angle = degrees(atan2(mouseY - self.rect.centery, mouseX - self.rect.centerx)) + 90
-        self.currentAsset = transform.rotate(self.assets[self.currentFrame], -self.angle)
-        self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
-        mainscreen.blit(self.currentAsset, self.updatedRect)
+        if self.teleporting:
+            self.currentAsset = transform.rotate(transform.rotate(transform.scale_by(image.load("playerspriteteleport.png"), 3), -player.angle), -self.angle)
+            self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
+            mainscreen.blit(self.currentAsset, self.updatedRect)
+            player.teleporting = False
+        else:
+            mouseX, mouseY = pygame.mouse.get_pos()
+            self.angle = degrees(atan2(mouseY - self.rect.centery, mouseX - self.rect.centerx)) + 90
+            self.currentAsset = transform.rotate(self.assets[self.currentFrame], -self.angle)
+            self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
+            mainscreen.blit(self.currentAsset, self.updatedRect)
 
 class bullet():
     #Initialize Bullet Class
@@ -134,7 +148,7 @@ class powerUp:
             self.colour = (0, 255, 255)
     
     def draw(self, screen):
-        self.visual = draw.circle(screen, self.colour, self.position, 10)
+        self.visual = draw.circle(screen, self.colour, self.position, 30)
         
 
 running = True
@@ -172,7 +186,9 @@ def mainMenuScreen(mousePos):
 
 
 def endScreen(mousePos):
-    global player, existingBullets, existingEnemies, running, mainMenuState
+    global player, existingBullets, existingEnemies, running, mainMenuState, level, wave
+    level = 1
+    wave = 0
     menu = transform.scale_by(image.load("menubutton.png"), 4)
     menuRect = menu.get_rect(center=(400, 500))
     gameOver = transform.scale_by(image.load("gameover.png"), 6)
@@ -342,36 +358,40 @@ while running:
                                 existingBullets.remove(bullets)
                                 player.immunity = 30
                     
-                levelDetails = levelproperties[level]
+
 
                 if len(existingEnemies) <= 0:
                     if wave >= levelDetails["waves"]:
                         if level + 1 in levelDetails:
                             print("LEVEL INCREASED!!!!!!!!")
                             level += 1
-                            if random.randrange(0, 10) == 0:
-                                levelUpPowerUp.append(powerUp("teleport", (random.randint(0, 700), random.randint(0, 300))))
                         else:
                             print("MAX LEVEL REACHED OR INVALID LEVEL")
                             level = 2
+                        power = random.choice(["teleport", "health", "laser"])
+                        levelUpPowerUp.append(powerUp(power, (random.randint(0, 700), random.randint(0, 300))))
+                        for powers in levelUpPowerUp:
+                            powers.draw(mainscreen)
                         wave = 0
                         existingEnemies.clear()
                         print(level, wave)
-
+                
                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
-                    else: 
-                        while len(existingEnemies) <= levelDetails["enemies/wave"]:
-                            newPos = (random.randint(0, 700), random.randint(0, 300))
-                            enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
-                            if enemySpawnType == 0:
-                                existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
-                            elif enemySpawnType == 1:
-                                existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
-                            elif enemySpawnType == 2:
-                                existingEnemies.append(enemy(newPos, player.rect.center, 3, 5, 0, 2, 10))
-                        wave += 1
-                        player.immunity = 40
-                        existingBullets = []
+                    
+                    while len(existingEnemies) <= levelDetails["enemies/wave"]:
+                        newPos = (random.randint(0, 700), random.randint(0, 300))
+                        enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
+                        if enemySpawnType == 0:
+                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
+                        elif enemySpawnType == 1:
+                            existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
+                        elif enemySpawnType == 2:
+                            existingEnemies.append(enemy(newPos, player.rect.center, 3, 5, 0, 2, 10))
+                    wave += 1
+                    player.immunity = 40
+                    existingBullets = []
+
+                levelDetails = levelproperties[level]
 
                 if player.immunity > 0:
                     player.immunity -= 1
@@ -381,18 +401,26 @@ while running:
                     player.health = 100000
                 
                 for powers in levelUpPowerUp:
+                    powers.draw(mainscreen)
                     if player.rect.colliderect(powers.visual):
                         if powers.type == "teleport":
                             player.teleport = True
                             levelUpPowerUp.remove(powers)
+                        if powers.type == "health":
+                            player.health += random.randrange(1, 4)
+                            levelUpPowerUp.remove(powers)
                             
 
                 if keys[K_c]:
-                    player.rect.center = mousePos
-                    player.currentAsset = transform.rotate(transform.scale_by(image.load("playerspriteteleport.png"), 3), -player.angle)
-                    player.draw()
+                    print(player.powerUpCooldown)
+                    if player.powerUpCooldown <= 0:
+                        if player.teleport:
+                            player.powerUpCooldown = player.powerUpCooldownLength
+                            player.teleporting = True
+                            player.rect.center = mousePos
 
                 player.bulletCooldown -= 5
+                player.powerUpCooldown -= 1
                 healthDisplay()
                 player.update()
                 player.draw()
