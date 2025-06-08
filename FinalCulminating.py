@@ -59,7 +59,6 @@ class character:
             self.currentAsset = transform.rotate(transform.rotate(transform.scale_by(image.load("playerspriteteleport.png"), 3), -player.angle), -self.angle)
             self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
             mainscreen.blit(self.currentAsset, self.updatedRect)
-            player.teleporting = False
         else:
             mouseX, mouseY = pygame.mouse.get_pos()
             self.angle = degrees(atan2(mouseY - self.rect.centery, mouseX - self.rect.centerx)) + 90
@@ -141,14 +140,15 @@ class powerUp:
         self.position = position
         self.type = type
         if self.type == "teleport":
-            self.colour = (255, 0, 255)
+            self.image = transform.scale_by(image.load("teleporticon.png"), 3)
         elif self.type == "health":
-            self.colour = (255, 0, 0)
+            self.image = transform.scale_by(image.load("healthboosticon.png"), 3)
         elif self.type == "laser":
-            self.colour = (0, 255, 255)
+            self.image = transform.scale_by(image.load("lasericon.png"), 3)
     
     def draw(self, screen):
-        self.visual = draw.circle(screen, self.colour, self.position, 30)
+        self.rect = self.image.get_rect(center=self.position)
+        screen.blit(self.image, self.rect)
         
 
 running = True
@@ -369,7 +369,7 @@ while running:
                             print("MAX LEVEL REACHED OR INVALID LEVEL")
                             level = 2
                         power = random.choice(["teleport", "health", "laser"])
-                        levelUpPowerUp.append(powerUp(power, (random.randint(0, 700), random.randint(0, 300))))
+                        levelUpPowerUp.append(powerUp(power, (random.randint(200, 700), random.randint(200, 300))))
                         for powers in levelUpPowerUp:
                             powers.draw(mainscreen)
                         wave = 0
@@ -402,7 +402,7 @@ while running:
                 
                 for powers in levelUpPowerUp:
                     powers.draw(mainscreen)
-                    if player.rect.colliderect(powers.visual):
+                    if player.rect.colliderect(powers.rect):
                         if powers.type == "teleport":
                             player.teleport = True
                             levelUpPowerUp.remove(powers)
@@ -410,13 +410,16 @@ while running:
                             player.health += random.randrange(1, 4)
                             levelUpPowerUp.remove(powers)
                             
+                if random.randrange(0, 10000) == 0:
+                    levelUpPowerUp.append(powerUp("health", (random.randint(200, 700), random.randint(200, 300))))
 
                 if keys[K_c]:
                     print(player.powerUpCooldown)
                     if player.powerUpCooldown <= 0:
                         if player.teleport:
-                            player.powerUpCooldown = player.powerUpCooldownLength
                             player.teleporting = True
+                            player.draw()
+                            player.powerUpCooldown = player.powerUpCooldownLength
                             player.rect.center = mousePos
 
                 player.bulletCooldown -= 5
@@ -424,5 +427,7 @@ while running:
                 healthDisplay()
                 player.update()
                 player.draw()
+                player.teleporting = False
+
 
     pygame.display.flip()
