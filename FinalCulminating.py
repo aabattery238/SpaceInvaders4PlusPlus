@@ -3,23 +3,29 @@ from pygame import *
 from pygame.locals import *
 import random
 from math import *
-import time
+
+
 print('start')
 levelproperties = {
     1 : {
-        "waves" : 3,
-        "enemies/wave" : 3,
+        "waves" : 1,
+        "enemies/wave" : 2,
         "enemiesChance" : 0
     },
     2 : {
-        "waves" : 4,
-        "enemies/wave" : 5,
+        "waves" : 3,
+        "enemies/wave" : 4,
         "enemiesChance" : 1
     },
     3 : {
-        "waves" : 4,
-        "enemies/wave" : 5,
+        "waves" : 3,
+        "enemies/wave" : 6,
         "enemiesChance" : 3
+    },
+    4 : {
+        "waves" : 4,
+        "enemies/wave" : 6,
+        "enemiesChance" : 4
     }
 }
 
@@ -43,8 +49,11 @@ class character:
         self.bulletCooldownLength = 60
         self.teleport = False
         self.teleporting = False
+        self.laserMode = False
+        self.laserModeImage = False
+        self.laserTimer = 0
         self.powerUpCooldown = 0
-        self.powerUpCooldownLength = 120
+        self.powerUpCooldownLength = 320
 
     def update(self):
         #Update the Frame of Class Character
@@ -57,6 +66,18 @@ class character:
         #Draw the Image based on scaling, rotation and 
         if self.teleporting:
             self.currentAsset = transform.rotate(transform.rotate(transform.scale_by(image.load("playerspriteteleport.png"), 3), -player.angle), -self.angle)
+            self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
+            mainscreen.blit(self.currentAsset, self.updatedRect)
+
+        elif self.laserModeImage:
+            self.laserAssets = [transform.scale_by(image.load("playerspritelaser1.png.png"), 3), transform.scale_by(image.load("playerspritelaser2.png.png"), 3)]
+            self.frameCounter += 1
+            if self.frameCounter >= 10:
+                self.currentFrame = (self.currentFrame + 1) % len(self.laserAssets)
+                self.frameCounter = 0
+            mouseX, mouseY = pygame.mouse.get_pos()
+            self.angle = degrees(atan2(mouseY - self.rect.centery, mouseX - self.rect.centerx)) + 90
+            self.currentAsset = transform.rotate(self.laserAssets[self.currentFrame], -self.angle)
             self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
             mainscreen.blit(self.currentAsset, self.updatedRect)
         else:
@@ -77,8 +98,12 @@ class bullet():
         self.visual = draw.circle(mainscreen, self.colour, self.position, 5)
 
     def update(self):
-        self.position[0] += self.direction[0] * 5
-        self.position[1] += self.direction[1] * 5
+        if type(self.shooter) == character:
+            self.position[0] += self.direction[0] * 10
+            self.position[1] += self.direction[1] * 10
+        else:
+            self.position[0] += self.direction[0] * 5
+            self.position[1] += self.direction[1] * 5
 
     def draw(self):
         self.visual = pygame.draw.circle(mainscreen, self.colour, self.position, 5)
@@ -186,7 +211,8 @@ def mainMenuScreen(mousePos):
 
 
 def endScreen(mousePos):
-    global player, existingBullets, existingEnemies, running, mainMenuState, level, wave
+    global player, existingBullets, existingEnemies, running, mainMenuState, level, wave, levelUpPowerUp
+    levelUpPowerUp = []
     level = 1
     wave = 0
     menu = transform.scale_by(image.load("menubutton.png"), 4)
@@ -361,13 +387,14 @@ while running:
 
 
                 if len(existingEnemies) <= 0:
+                    levels = levelproperties.keys()
+                    print(list(levels))
                     if wave >= levelDetails["waves"]:
                         if level + 1 in levelDetails:
                             print("LEVEL INCREASED!!!!!!!!")
                             level += 1
                         else:
                             print("MAX LEVEL REACHED OR INVALID LEVEL")
-                            level = 2
                         power = random.choice(["teleport", "health", "laser"])
                         levelUpPowerUp.append(powerUp(power, (random.randint(200, 700), random.randint(200, 300))))
                         for powers in levelUpPowerUp:
@@ -378,15 +405,15 @@ while running:
                 
                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
                     
-                    while len(existingEnemies) <= levelDetails["enemies/wave"]:
-                        newPos = (random.randint(0, 700), random.randint(0, 300))
+                    while len(existingEnemies) < levelDetails["enemies/wave"]:
+                        newPos = (random.randint(100, 700), random.randint(0, 400))
                         enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
-                        if enemySpawnType == 0:
-                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
-                        elif enemySpawnType == 1:
+                        if enemySpawnType == 1:
                             existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
                         elif enemySpawnType == 2:
-                            existingEnemies.append(enemy(newPos, player.rect.center, 3, 5, 0, 2, 10))
+                            existingEnemies.append(enemy(newPos, player.rect.center, 1, 5, 20, 2, 10))
+                        else:
+                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
                     wave += 1
                     player.immunity = 40
                     existingBullets = []
@@ -397,7 +424,6 @@ while running:
                     player.immunity -= 1
 
                 if keys[K_o] and keys[K_p]:
-                    player.bulletCooldownLength = 0
                     player.health = 100000
                 
                 for powers in levelUpPowerUp:
@@ -406,22 +432,36 @@ while running:
                         if powers.type == "teleport":
                             player.teleport = True
                             levelUpPowerUp.remove(powers)
-                        if powers.type == "health":
+                        elif powers.type == "health":
                             player.health += random.randrange(1, 4)
+                            levelUpPowerUp.remove(powers)
+                        elif powers.type == "laser":
+                            player.laserMode = True
                             levelUpPowerUp.remove(powers)
                             
                 if random.randrange(0, 10000) == 0:
                     levelUpPowerUp.append(powerUp("health", (random.randint(200, 700), random.randint(200, 300))))
 
-                if keys[K_c]:
-                    print(player.powerUpCooldown)
-                    if player.powerUpCooldown <= 0:
-                        if player.teleport:
-                            player.teleporting = True
-                            player.draw()
-                            player.powerUpCooldown = player.powerUpCooldownLength
-                            player.rect.center = mousePos
+                if player.powerUpCooldown <= 0:
+                    if keys[K_c] and player.teleport:
+                        print("hi")
+                        player.teleporting = True
+                        player.powerUpCooldown = player.powerUpCooldownLength
+                        player.rect.center = mousePos
 
+                    elif keys[K_f] and player.laserMode:
+                        player.laserTimer = 60
+                        player.laserModeImage = True
+                        player.draw()
+                        player.powerUpCooldown = player.powerUpCooldownLength
+                
+                if player.laserTimer > 0:
+                    player.bulletCooldownLength = 0
+                else:
+                    player.bulletCooldownLength = 60
+                    player.laserModeImage = False
+
+                player.laserTimer -= 1
                 player.bulletCooldown -= 5
                 player.powerUpCooldown -= 1
                 healthDisplay()
