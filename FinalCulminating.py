@@ -5,7 +5,6 @@ import random
 from math import *
 
 
-print('start')
 levelproperties = {
     1 : {
         "waves" : 1,
@@ -181,23 +180,34 @@ running = True
 mainMenuState = True
 helpMenuState = False
 
+def helpScreen():
+    global mainMenuState, helpMenuState
+    controlsAsset = transform.scale_by(image.load("controls.png"), 4)
+    controlsRect = controlsAsset.get_rect(center=(400, 300))
+    menu = transform.scale_by(image.load("menubutton.png"), 4)
+    menuRect = menu.get_rect(center = (400, 600))
+    if event.type == MOUSEBUTTONDOWN:
+        if menuRect.collidepoint(mousePos):
+            helpMenuState = False
+            mainMenuState = True
+    for button in [[controlsAsset, controlsRect], [menu, menuRect]]:
+            mainscreen.blit(button[0], button[1])
+
 
 def mainMenuScreen(mousePos):
     global mainMenuState, running, helpMenuState
     startButton = transform.scale_by(image.load("startbutton.png"), 5)
-    startButtonRect = startButton.get_rect(center=(400, 350))
-    quitButton = transform.scale_by(image.load("quitbutton.png"), 4)
+    startButtonRect = startButton.get_rect(center=(400, 300))
+    quitButton = transform.scale_by(image.load("quitbutton.png"), 5)
     quitButtonRect = quitButton.get_rect(center=(300, 400))
-    helpButton = transform.scale_by(image.load("helpbutton.png"), 4)
+    helpButton = transform.scale_by(image.load("helpbutton.png"), 5)
     helpButtonRect = helpButton.get_rect(center=(500, 400))
     titleCard = transform.scale_by(image.load("titlecard.png"), 4)
     titleCardRect = titleCard.get_rect(center=(400, 150))
     
 
     if event.type == MOUSEBUTTONUP:
-        print("Mouse Down")
         if startButtonRect.collidepoint(mousePos):
-            print("srjbkjsbf")
             mainMenuState = False
         elif quitButtonRect.collidepoint(mousePos):
             running = False
@@ -245,19 +255,7 @@ def endScreen(mousePos):
 
     for button in [[retryButton, retryButtonRect], [quitButton, quitButtonRect], [gameOver, gameOverRect], [menu, menuRect],[finalPoints, finalPointsRect]]:
             mainscreen.blit(button[0], button[1])
-    
-def helpScreen():
-    global mainMenuState, helpMenuState
-    controlsAsset = transform.scale_by(image.load("controls.png"), 4)
-    controlsRect = controlsAsset.get_rect(center=(400, 300))
-    menu = transform.scale_by(image.load("menubutton.png"), 4)
-    menuRect = menu.get_rect((400, 600))
-    if event.type == MOUSEBUTTONDOWN:
-        if menuRect.collidepoint(mousePos):
-            helpMenuState = False
-            mainMenuState = True
-    for button in [[controlsAsset, controlsRect], [menu, menuRect]]:
-            mainscreen.blit(button[0], button[1])
+
 
 def healthDisplay():
     heart = transform.scale_by(image.load("heart.png"), 4)
@@ -347,7 +345,6 @@ while running:
                 for enemies in existingEnemies:
                     if enemies.health <= 0:
                         player.points += enemies.pointValue
-                        print(player.points)
                         enemies.existance = False
                         existingEnemies.remove(enemies)
                         
@@ -377,7 +374,6 @@ while running:
                 
                         elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
                             if player.rect.colliderect(bullets.visual) and bullets.existance:
-                                print("-1 Health")
                                 player.health -= 1
                                 mainscreen.fill((255,0,0))
                                 bullets.existance = False
@@ -388,10 +384,9 @@ while running:
 
                 if len(existingEnemies) <= 0:
                     levels = levelproperties.keys()
-                    print(list(levels))
                     if wave >= levelDetails["waves"]:
                         if level + 1 in levelDetails:
-                            print("LEVEL INCREASED!!!!!!!!")
+                            print("LEVEL INCREASED")
                             level += 1
                         else:
                             print("MAX LEVEL REACHED OR INVALID LEVEL")
@@ -401,7 +396,6 @@ while running:
                             powers.draw(mainscreen)
                         wave = 0
                         existingEnemies.clear()
-                        print(level, wave)
                 
                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
                     
@@ -444,7 +438,6 @@ while running:
 
                 if player.powerUpCooldown <= 0:
                     if keys[K_c] and player.teleport:
-                        print("hi")
                         player.teleporting = True
                         player.powerUpCooldown = player.powerUpCooldownLength
                         player.rect.center = mousePos
