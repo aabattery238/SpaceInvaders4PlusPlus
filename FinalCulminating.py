@@ -9,12 +9,12 @@ from math import *
 levelproperties = {
     1 : {
         "waves" : 1,
-        "enemies/wave" : 2,
+        "enemies/wave" : 3,
         "enemiesChance" : 0
     },
     2 : {
         "waves" : 3,
-        "enemies/wave" : 4,
+        "enemies/wave" : 5,
         "enemiesChance" : 1
     },
     3 : {
@@ -386,13 +386,14 @@ while running:
 
 
                 if len(existingEnemies) <= 0:
-                    levels = levelproperties.keys()
+                    levels = list(levelproperties.keys())
                     if wave >= levelDetails["waves"]:
-                        if level + 1 in levelDetails:
+                        if level + 1 in levels:
                             print("LEVEL INCREASED")
                             level += 1
                         else:
                             print("MAX LEVEL REACHED OR INVALID LEVEL")
+                        levelUpPowerUp.clear()
                         power = random.choice(["teleport", "health", "laser"])
                         levelUpPowerUp.append(powerUp(power, (random.randint(200, 700), random.randint(200, 300))))
                         for powers in levelUpPowerUp:
