@@ -404,7 +404,7 @@ while running:
                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
                     
                     while len(existingEnemies) < levelDetails["enemies/wave"]:
-                        newPos = (random.randint(100, 700), random.randint(0, 400))
+                        newPos = (random.randint(0, 800), random.randint(0, 300))
                         enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
                         if enemySpawnType == 1:
                             existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
