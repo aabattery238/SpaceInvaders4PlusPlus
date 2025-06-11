@@ -423,6 +423,19 @@ while running:
 
                 if keys[K_o] and keys[K_p]:
                     player.health = 100000
+                    player.bulletCooldownLength = 0
+                    player.teleport = True
+                    player.powerUpCooldownLength = 0
+
+                if keys[K_l]:
+                    newPos = (random.randint(100, 700), random.randint(0, 400))
+                    enemySpawnType = random.randint(0, 10)
+                    if enemySpawnType == 1:
+                        existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
+                    elif enemySpawnType == 2:
+                        existingEnemies.append(enemy(newPos, player.rect.center, 1, 5, 20, 2, 10))
+                    else:
+                        existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
                 
                 for powers in levelUpPowerUp:
                     powers.draw(mainscreen)
