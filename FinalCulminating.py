@@ -5,6 +5,7 @@ import random
 from math import *
 
 
+
 levelproperties = {
     1 : {
         "waves" : 1,
@@ -118,7 +119,9 @@ class enemy:
         self.existance = True
         self.shootingSpeed = shootingSpeed
         #0 is enemy 1, 1 is enemy 2, you know the drill
-        self.assets = [[transform.scale_by(image.load("basicenemysprite1.png"), 3), transform.scale_by(image.load("basicenemysprite2.png"), 3)], [transform.scale_by(image.load("enemy2sprite1.png"), 3), transform.scale_by(image.load("enemy2sprite2.png"), 3)], [transform.scale_by(image.load("boss1sprite1.png"), 2), transform.scale_by(image.load("boss1sprite2.png"), 2)]]
+        self.assets = [[transform.scale_by(image.load("basicenemysprite1.png"), 3), transform.scale_by(image.load("basicenemysprite2.png"), 3)], 
+                       [transform.scale_by(image.load("enemy2sprite1.png"), 3), transform.scale_by(image.load("enemy2sprite2.png"), 3)], 
+                       [transform.scale_by(image.load("boss1sprite1.png"), 2), transform.scale_by(image.load("boss1sprite2.png"), 2)]]
         self.rect = self.assets[0][0].get_rect(center = self.position)
         self.frameCounter = 0
         self.currentFrame = 0
