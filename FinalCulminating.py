@@ -352,6 +352,7 @@ while running:
                     if keys[K_s]:
                         player.rect.centery += (player.speed/2)
                 else:
+                    #regular speed
                     if keys[K_d]:
                         player.rect.centerx += player.speed
                     if keys[K_a]:
@@ -360,7 +361,7 @@ while running:
                         player.rect.centery -= player.speed
                     if keys[K_s]:
                         player.rect.centery += player.speed
-                
+                #border check
                 if player.rect.centerx < 0:
                     player.rect.centerx += player.speed
                 if player.rect.centerx > 800:
@@ -372,32 +373,39 @@ while running:
                     
 
                 if keys[K_SPACE] and player.bulletCooldown <= 0:
+                    #create bullet if space clicked
                     mouseX, mouseY = pygame.mouse.get_pos()
                     dx, dy = mouseX - player.rect.centerx, mouseY - player.rect.centery
                     distance = hypot(dx, dy)
 
                     if distance != 0:
                         direction = [dx / distance, dy / distance]
+                        #play pew sound
                         pewSound.play()
                         existingBullets.append(bullet(player, player.rect.center, direction, (255, 255, 255 )))
                         player.bulletCooldown = player.bulletCooldownLength
 
                 for bullets in existingBullets:
+                    #draw all valid bullets
                     if bullets.existance:
                         bullets.update()
                         bullets.draw()
 
                 for enemies in existingEnemies:
+                    #draw all valid enemies
                     if enemies.health <= 0:
+                        #delete dead enemies
                         player.points += enemies.pointValue
                         enemies.existance = False
                         existingEnemies.remove(enemies)
                         
                     if enemies.existance:
+                        #point enemy towards player
                         enemies.update(player.rect.center)
                         enemies.draw(mainscreen)
 
                         if enemies.cooldown <= 0:
+                            #enemy shooting cool down
                             dx, dy = player.rect.centerx - enemies.position[0], player.rect.centery - enemies.position[1]
                             distance = hypot(dx, dy)
 
@@ -412,11 +420,13 @@ while running:
 
                     for bullets in existingBullets:
                         if bullets.shooter == player:
+                            #remove enemy health if player bullet hits
                             if enemies.rect.colliderect(bullets.visual) and enemies.existance and bullets.existance:
                                 bullets.existance = False
                                 existingBullets.remove(bullets)
                                 enemies.health -= 1
                                 if enemies.enemyType == 3:
+                                    #Secret Boss fight
                                     for x in range(0, 3):
                                         newPos = (random.randint(100, 700), random.randint(0, 400))
                                         enemySpawnType = random.randint(0, 10)
@@ -437,29 +447,29 @@ while running:
                     
 
 
-                if len(existingEnemies) <= 0:
+                if len(existingEnemies) <= 0: #when enmies are all defeated create a new wave
                     levels = list(levelproperties.keys())
-                    if wave >= levelDetails["waves"]:
+                    if wave >= levelDetails["waves"]: #if all the waves have been defeated create new level
                         if level + 1 in levels:
                             print("LEVEL INCREASED")
                             level += 1
                         else:
                             print("MAX LEVEL REACHED OR INVALID LEVEL")
-                        levelUpPowerUp.clear()
+                        levelUpPowerUp.clear() #clear all un picked powerups
                         power = random.choice(["teleport", "health", "laser"])
                         levelUpPowerUp.append(powerUp(power, (random.randint(200, 700), random.randint(200, 300))))
                         for powers in levelUpPowerUp:
                             powers.draw(mainscreen)
-                        wave = 0
+                        wave = 0 #reset wace counter
                         existingEnemies.clear()
                 
                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
-                    if levelDetails["enemiesChance"] == 10 and random.randrange(0, 4) == 0:
+                    if levelDetails["enemiesChance"] == 10 and random.randrange(0, 4) == 0: #create boss when level 4 reached + random chance
                             existingEnemies.clear()
                             existingEnemies.append(enemy((400, 100), player.rect.center, 60, 20, 800, 3, 100))
                             level -= 1
 
-                    else:
+                    else: #if not boss create regular enemies based on enemies/wave and chance
                         while len(existingEnemies) < levelDetails["enemies/wave"]:
                             newPos = (random.randint(100, 700), random.randint(0, 400))
                             enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
@@ -475,17 +485,17 @@ while running:
 
                 levelDetails = levelproperties[level]
 
-                if player.immunity > 0:
+                if player.immunity > 0: #player immunity
                     player.immunity -= 1
 
-                if keys[K_o] and keys[K_p]:
+                if keys[K_o] and keys[K_p]: #OP mode for Abdullah and Derek ONLY not Mr. Nagra
                     player.health = 100000
                     player.bulletCooldownLength = 0
                     player.laserTimer = 10000000000000000000
                     player.teleport = True
                     player.powerUpCooldownLength = 0
 
-                if keys[K_l]:
+                if keys[K_l]: #Enemy spawner FOR TESTING ONLY ;)
                     newPos = (random.randint(100, 700), random.randint(0, 400))
                     enemySpawnType = random.randint(0, 10)
                     if enemySpawnType == 1:
@@ -495,11 +505,12 @@ while running:
                     else:
                         existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
 
-                if keys[K_n]:
+                if keys[K_n]: #Boss spawner FOR TESTING ONLY ;)
                     newPos = (random.randint(100, 700), random.randint(0, 400))
                     existingEnemies.append(enemy((400, 100), player.rect.center, 60, 20, 800, 3, 100))
                 
                 for powers in levelUpPowerUp:
+                    #powerups!
                     powers.draw(mainscreen)
                     if player.rect.colliderect(powers.rect):
                         if powers.type == "teleport":
@@ -512,34 +523,34 @@ while running:
                             player.laserMode = True
                             levelUpPowerUp.remove(powers)
                             
-                if random.randrange(0, 10000) == 0:
+                if random.randrange(0, 10000) == 0: #randomly spawn health
                     levelUpPowerUp.append(powerUp("health", (random.randint(200, 700), random.randint(200, 300))))
 
-                if player.powerUpCooldown <= 0:
+                if player.powerUpCooldown <= 0: #Teleport
                     if keys[K_c] and player.teleport:
                         player.teleporting = True
                         player.powerUpCooldown = player.powerUpCooldownLength
                         player.rect.center = mousePos
 
-                    elif keys[K_f] and player.laserMode:
+                    elif keys[K_f] and player.laserMode: #laser
                         player.laserTimer = 60
                         player.laserModeImage = True
                         player.draw()
                         player.powerUpCooldown = player.powerUpCooldownLength
                 
-                if player.laserTimer > 0:
+                if player.laserTimer > 0: #laser timer
                     player.bulletCooldownLength = 0
                 else:
                     player.bulletCooldownLength = 60
                     player.laserModeImage = False
 
-                player.laserTimer -= 1
-                player.bulletCooldown -= 5
-                player.powerUpCooldown -= 1
-                healthDisplay()
-                player.update()
+                player.laserTimer -= 1 #laser timer remander
+                player.bulletCooldown -= 5 #Player bullet cooldown 
+                player.powerUpCooldown -= 1 #powerup cooldown to use new powerup
+                healthDisplay() #display health
+                player.update() #draw and update player
                 player.draw()
-                player.teleporting = False
+                player.teleporting = False #stop player teleporting afterwards
 
 
     pygame.display.flip()
