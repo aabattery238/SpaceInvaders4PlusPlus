@@ -5,8 +5,11 @@ import random
 from math import *
 
 
-
+#Sets Level details
 levelproperties = {
+    # waves = number of waves
+    # enemies/wave = the number of enemies spawn for each wave
+    # enemiesChance = chance of which enemy type spawns
     1 : {
         "waves" : 1,
         "enemies/wave" : 4,
@@ -29,24 +32,37 @@ levelproperties = {
     }
 }
 
-
+#Initialize Clock
 clock = pygame.time.Clock()
+#Initialize Screen
 mainscreen = pygame.display.set_mode((800,800))
+#Initialize Sound PEW
+pygame.mixer.init()
+pewSound = pygame.mixer.Sound("pew.mp3")
+pewSound.set_volume(0.5)
 
 class character:
     #Initialize Player Class
     def __init__(self, position):
+        #immunity value
         self.immunity = 0
+        #Health Start
         self.health = 5
+        #Position Inputed
         self.position = tuple(position)
+        #Assets to animate
         self.assets = [transform.scale_by(image.load("playersprite1.png"), 3), transform.scale_by(image.load("playersprite2.png"), 3)]
+        #Rectangle/Boundry
         self.rect = self.assets[0].get_rect(center = self.position)
         self.frameCounter = 0
         self.currentFrame = 0
         self.bulletCooldown = 0
+        #Player Speed
         self.speed = 5
         self.points = 0
+        #Ticks between New Bullet 
         self.bulletCooldownLength = 60
+        #Power Up Stuff
         self.teleport = False
         self.teleporting = False
         self.laserMode = False
@@ -63,13 +79,14 @@ class character:
             self.frameCounter = 0
 
     def draw(self):
-        #Draw the Image based on scaling, rotation and 
+        #Draw the Image based on scaling, and rotation 
         if self.teleporting:
             self.currentAsset = transform.rotate(transform.rotate(transform.scale_by(image.load("playerspriteteleport.png"), 3), -player.angle), -self.angle)
             self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
             mainscreen.blit(self.currentAsset, self.updatedRect)
 
         elif self.laserModeImage:
+            #Change image for if laser powerup is active
             self.laserAssets = [transform.scale_by(image.load("playerspritelaser1.png.png"), 3), transform.scale_by(image.load("playerspritelaser2.png.png"), 3)]
             self.frameCounter += 1
             if self.frameCounter >= 10:
@@ -81,6 +98,7 @@ class character:
             self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
             mainscreen.blit(self.currentAsset, self.updatedRect)
         else:
+            #Angle rotation math
             mouseX, mouseY = pygame.mouse.get_pos()
             self.angle = degrees(atan2(mouseY - self.rect.centery, mouseX - self.rect.centerx)) + 90
             self.currentAsset = transform.rotate(self.assets[self.currentFrame], -self.angle)
@@ -90,6 +108,7 @@ class character:
 class bullet():
     #Initialize Bullet Class
     def __init__(self, shooter, position, direction, colour):
+        #Who is shooting Enemy or Player
         self.shooter = shooter
         self.position = list(position)
         self.direction = list(direction)
@@ -98,6 +117,7 @@ class bullet():
         self.visual = draw.circle(mainscreen, self.colour, self.position, 5)
 
     def update(self):
+        #Move towards target different speeds based on shooter
         if type(self.shooter) == character:
             self.position[0] += self.direction[0] * 10
             self.position[1] += self.direction[1] * 10
@@ -106,6 +126,7 @@ class bullet():
             self.position[1] += self.direction[1] * 5
 
     def draw(self):
+        #Draw bullet each tick
         self.visual = pygame.draw.circle(mainscreen, self.colour, self.position, 5)
         
 
@@ -114,7 +135,9 @@ class enemy:
     #Initialize Enemy Class
     def __init__(self, position, direction, shootingSpeed, health, orbitRadius, enemyType, pointValue):
         self.position = list(position)
+        #Enemy Target
         self.direction = list(direction)
+        #health each enemy has
         self.health = health  
         self.existance = True
         self.shootingSpeed = shootingSpeed
@@ -128,11 +151,13 @@ class enemy:
         self.currentFrame = 0
         self.cooldown = 0
         self.cooldownLength = 60
+        #distance where enemy orbits
         self.orbitRadius = orbitRadius
         self.enemyType = enemyType
         self.pointValue = pointValue
 
     def update(self, playerPosition):
+        #update frame based on enemy
         self.frameCounter += 1
         if self.frameCounter >= 10:
             if self.enemyType in [0, 1, 2, 3]:
@@ -154,15 +179,18 @@ class enemy:
             self.rect.centery = self.position[1]
 
     def draw(self, screen):
+        #draw enemy based on type and change angle depending on where player is
         angle = degrees(atan2(self.playerPosition[1] - self.rect.centery, self.playerPosition[0] - self.rect.centerx)) -90
         self.currentAsset = transform.rotate(self.assets[self.enemyType][self.currentFrame], -angle)
         self.updatedRect = self.currentAsset.get_rect(center=self.rect.center)
         screen.blit(self.currentAsset, self.updatedRect)
 
 class powerUp:
+    #initialize powerups
     def __init__(self, type, position):
         self.position = position
         self.type = type
+        #Power up options
         if self.type == "teleport":
             self.image = transform.scale_by(image.load("teleporticon.png"), 3)
         elif self.type == "health":
@@ -171,6 +199,7 @@ class powerUp:
             self.image = transform.scale_by(image.load("lasericon.png"), 3)
     
     def draw(self, screen):
+        #Draw powerup based on asset
         self.rect = self.image.get_rect(center=self.position)
         screen.blit(self.image, self.rect)
         
@@ -181,6 +210,7 @@ mainMenuState = True
 helpMenuState = False
 
 def helpScreen():
+    #function to draw help screen
     global mainMenuState, helpMenuState
     controlsAsset = transform.scale_by(image.load("controls.png"), 4)
     controlsRect = controlsAsset.get_rect(center=(400, 300))
@@ -195,6 +225,7 @@ def helpScreen():
 
 
 def mainMenuScreen(mousePos):
+    #function to draw menu screen
     global mainMenuState, running, helpMenuState
     startButton = transform.scale_by(image.load("startbutton.png"), 5)
     startButtonRect = startButton.get_rect(center=(400, 300))
@@ -221,6 +252,7 @@ def mainMenuScreen(mousePos):
 
 
 def endScreen(mousePos):
+    #function to draw end screen
     global player, existingBullets, existingEnemies, running, mainMenuState, level, wave, levelUpPowerUp
     levelUpPowerUp = []
     level = 1
@@ -258,6 +290,7 @@ def endScreen(mousePos):
 
 
 def healthDisplay():
+    #function to draw health counter
     heart = transform.scale_by(image.load("heart.png"), 4)
     heartRect = heart.get_rect(center=(25,25))
     font = pygame.font.Font('pixeloid.ttf',40)
@@ -266,39 +299,50 @@ def healthDisplay():
     for button in [[heart, heartRect], [healthDisplayNumber, healthDisplayRect]]:
             mainscreen.blit(button[0], button[1])
 
+#create player Character
 player = character((300, 300))
+#List of existing bullets
 existingBullets = [bullet(player, (0, 0), (0, 0), (0, 0, 0))]
+#List of existing enemies
 existingEnemies = [enemy((random.randrange(0, 800), random.randrange(0, 300)), player.rect.center, 2, 1, 150, 0, 1)]
 level = 1
 wave = 0
-
+#list of existing powerups
 levelUpPowerUp = []
 pygame.init()
 
+#run pygame screen
 while running:
+    #Colock tick 60 per second
     ticks = clock.tick(60)
+    #fill screen with black to erase previous frame before new one
     mainscreen.fill((0,0,0))
-
+    #get events like keyboard click
     events = pygame.event.get()
+        #quit pygame
     for event in events:
         if event.type == pygame.QUIT:
             running = False
-
+    #list of key values
     keys = pygame.key.get_pressed()
     mousePos = pygame.mouse.get_pos()
-
+    #first time loading or death display menu
     if mainMenuState:
         mainMenuScreen(mousePos)
     
     elif not mainMenuState:
+        #display help if help clicked
         if helpMenuState:
             helpScreen()
         elif not helpMenuState:
-            if player.health == 0:
+            #End game if health is 0
+            if player.health <= 0:
                 endScreen(mousePos)
-                
+            
             else:
+                #game
                 if keys[K_LSHIFT]:
+                    #crouching --> reduce speed
                     if keys[K_d]:
                         player.rect.centerx += (player.speed/2)
                     if keys[K_a]:
@@ -334,6 +378,7 @@ while running:
 
                     if distance != 0:
                         direction = [dx / distance, dy / distance]
+                        pewSound.play()
                         existingBullets.append(bullet(player, player.rect.center, direction, (255, 255, 255 )))
                         player.bulletCooldown = player.bulletCooldownLength
 
