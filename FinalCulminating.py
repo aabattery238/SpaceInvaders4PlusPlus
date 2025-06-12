@@ -336,7 +336,7 @@ while running:
             helpScreen()
         elif not helpMenuState:
             #End game if health is 0
-            if player.health <= 0:
+            if player.health == 0:
                 endScreen(mousePos)
             
             else:
