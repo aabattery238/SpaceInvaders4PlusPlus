@@ -9,23 +9,23 @@ from math import *
 levelproperties = {
     1 : {
         "waves" : 1,
-        "enemies/wave" : 3,
+        "enemies/wave" : 4,
         "enemiesChance" : 0
     },
     2 : {
         "waves" : 3,
-        "enemies/wave" : 5,
+        "enemies/wave" : 6,
         "enemiesChance" : 1
     },
     3 : {
         "waves" : 3,
-        "enemies/wave" : 6,
+        "enemies/wave" : 8,
         "enemiesChance" : 3
     },
     4 : {
-        "waves" : 4,
-        "enemies/wave" : 6,
-        "enemiesChance" : 4
+        "waves" : 1,
+        "enemies/wave" : 10,
+        "enemiesChance" : 10
     }
 }
 
@@ -121,7 +121,8 @@ class enemy:
         #0 is enemy 1, 1 is enemy 2, you know the drill
         self.assets = [[transform.scale_by(image.load("basicenemysprite1.png"), 3), transform.scale_by(image.load("basicenemysprite2.png"), 3)], 
                        [transform.scale_by(image.load("enemy2sprite1.png"), 3), transform.scale_by(image.load("enemy2sprite2.png"), 3)], 
-                       [transform.scale_by(image.load("boss1sprite1.png"), 2), transform.scale_by(image.load("boss1sprite2.png"), 2)]]
+                       [transform.scale_by(image.load("boss1sprite1.png"), 2), transform.scale_by(image.load("boss1sprite2.png"), 2)], 
+                       [transform.scale_by(image.load("boss2sprite1.png"), 0.3), transform.scale_by(image.load("boss2sprite2.png"), 0.3)]]
         self.rect = self.assets[0][0].get_rect(center = self.position)
         self.frameCounter = 0
         self.currentFrame = 0
@@ -133,15 +134,11 @@ class enemy:
 
     def update(self, playerPosition):
         self.frameCounter += 1
-        #surely this is for loopable but idk
-        if self.enemyType == 0:
-            if self.frameCounter >= 10:
+        if self.frameCounter >= 10:
+            if self.enemyType in [0, 1, 2, 3]:
                 self.currentFrame = (self.currentFrame + 1) % 2
-                self.frameCounter = 0
-        elif self.enemyType == 1:
-            if self.frameCounter >= 10:
-                self.currentFrame = (self.currentFrame + 1) % 2
-                self.frameCounter = 0
+            self.frameCounter = 0
+        
 
         self.playerPosition = playerPosition
         dx = playerPosition[0] - self.position[0]
@@ -374,6 +371,16 @@ while running:
                                 bullets.existance = False
                                 existingBullets.remove(bullets)
                                 enemies.health -= 1
+                                if enemies.enemyType == 3:
+                                    for x in range(0, 3):
+                                        newPos = (random.randint(100, 700), random.randint(0, 400))
+                                        enemySpawnType = random.randint(0, 10)
+                                        if enemySpawnType == 1:
+                                            existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
+                                        elif enemySpawnType == 2:
+                                            existingEnemies.append(enemy(newPos, player.rect.center, 1, 5, 20, 2, 10))
+                                        else:
+                                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
                 
                         elif (bullets.shooter in existingEnemies) and player.immunity <= 0:
                             if player.rect.colliderect(bullets.visual) and bullets.existance:
@@ -402,16 +409,21 @@ while running:
                         existingEnemies.clear()
                 
                     #self, position, direction, shootingSpeed, health, orbitRadius, enemyType
-                    
-                    while len(existingEnemies) < levelDetails["enemies/wave"]:
-                        newPos = (random.randint(100, 700), random.randint(0, 400))
-                        enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
-                        if enemySpawnType == 1:
-                            existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
-                        elif enemySpawnType == 2:
-                            existingEnemies.append(enemy(newPos, player.rect.center, 1, 5, 20, 2, 10))
-                        else:
-                            existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
+                    if levelDetails["enemiesChance"] == 10 and random.randrange(0, 4) == 0:
+                            existingEnemies.clear()
+                            existingEnemies.append(enemy((400, 100), player.rect.center, 60, 20, 800, 3, 100))
+                            level -= 1
+
+                    else:
+                        while len(existingEnemies) < levelDetails["enemies/wave"]:
+                            newPos = (random.randint(100, 700), random.randint(0, 400))
+                            enemySpawnType = random.randint(0,levelDetails["enemiesChance"])
+                            if enemySpawnType == 1:
+                                existingEnemies.append(enemy(newPos, player.rect.center, 4, 2, 600, 1, 3))
+                            elif enemySpawnType == 2:
+                                existingEnemies.append(enemy(newPos, player.rect.center, 1, 5, 20, 2, 10))
+                            else:
+                                existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
                     wave += 1
                     player.immunity = 40
                     existingBullets = []
@@ -424,6 +436,7 @@ while running:
                 if keys[K_o] and keys[K_p]:
                     player.health = 100000
                     player.bulletCooldownLength = 0
+                    player.laserTimer = 10000000000000000000
                     player.teleport = True
                     player.powerUpCooldownLength = 0
 
@@ -436,6 +449,10 @@ while running:
                         existingEnemies.append(enemy(newPos, player.rect.center, 1, 5, 20, 2, 10))
                     else:
                         existingEnemies.append(enemy(newPos, player.rect.center, 2, 1, 150, 0, 1))
+
+                if keys[K_n]:
+                    newPos = (random.randint(100, 700), random.randint(0, 400))
+                    existingEnemies.append(enemy((400, 100), player.rect.center, 60, 20, 800, 3, 100))
                 
                 for powers in levelUpPowerUp:
                     powers.draw(mainscreen)

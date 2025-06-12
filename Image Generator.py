@@ -10,7 +10,7 @@ mainscreen = display.set_mode((800, 800))
 running = True
 
 # Load and prepare image ONCE
-pyimage = transform.scale_by(image.load("basicenemysprite1.png"), 8)
+pyimage = transform.scale_by(image.load("boss2sprite1.png"), 0.3)
 pyrect = pyimage.get_rect(center=(400, 550))
 
 # Main loop
